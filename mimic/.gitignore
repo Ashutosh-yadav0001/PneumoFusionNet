@@ -1,0 +1,71 @@
+# =============================================================
+# MIMIC-CXR Research Project — .gitignore
+# =============================================================
+
+# ── Large Dataset Files (do NOT commit) ──────────────────────
+MIMIC_CXR_JPG_P1/
+mimiciv/
+*.jpg
+*.png
+*.dcm
+*.nii
+*.nii.gz
+
+# ── CheXpert / Label CSVs (large files) ──────────────────────
+mimic-cxr-2.0.0-chexpert.csv
+mimic-cxr-2.0.0-metadata.csv
+mimic-cxr-2.0.0-split.csv
+
+# ── Trained Model Weights ─────────────────────────────────────
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.pkl
+mimic_pilot/outputs/
+
+# ── PDF Papers ────────────────────────────────────────────────
+*.pdf
+
+# ── Python Virtual Environment ────────────────────────────────
+venv/
+env/
+.env/
+.venv/
+
+# ── Python Cache ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+.pytest_cache/
+
+# ── Jupyter Notebook Outputs ──────────────────────────────────
+# (keep .ipynb files but strip outputs before committing)
+.ipynb_checkpoints/
+
+# ── IDE / Editor ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Logs & Temp ───────────────────────────────────────────────
+*.log
+*.tmp
+*.temp
+logs/
+
+# ── OS Files ──────────────────────────────────────────────────
+desktop.ini
+ehthumbs.db
+
+# ── What IS tracked (examples) ────────────────────────────────
+# mimic_pilot/build_dataset.py          ✅
+# mimic_pilot/mimic_image_classifier.ipynb ✅
+# requirements.txt                      ✅
+# README.md                             ✅
