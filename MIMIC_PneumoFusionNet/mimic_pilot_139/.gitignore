@@ -1,0 +1,36 @@
+# Restricted MIMIC data
+dataset_139/
+mimic-cxr-jpg/
+reports/
+
+# Metadata generated from MIMIC
+IMAGE_FILENAMES*
+patient_sub*
+study_id*
+urls*
+
+# Model checkpoints
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.keras
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large archives
+*.zip
+*.gz
+*.tar
+
+
+
