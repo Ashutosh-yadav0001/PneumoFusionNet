@@ -33,4 +33,8 @@ Thumbs.db
 *.tar
 
 
+!mimic_pilot_139/results/**/*.png
+
+
+
 
