@@ -1,0 +1,13 @@
+# Common ML and data-science packages
+numpy>=1.23
+pandas>=1.5
+scikit-learn>=1.1
+matplotlib>=3.5
+Pillow>=9.0
+opencv-python>=4.6
+torch>=1.13
+torchvision>=0.14
+tqdm
+scikit-image
+albumentations
+jupyter
