@@ -114,6 +114,18 @@ PneumoFusionNet/
 │   ├── README.md
 │   └── requirements.txt
 │
+├── model_experiments/                            # General model & various dataset experiments
+│   ├── v1_Basic_Image_Model.ipynb
+│   ├── v2_Enhanced_Image_Model_GCSA_DSC.ipynb
+│   ├── v3-1-iu-dataset-multimodal-image-baseline.ipynb
+│   └── v3-2-iu-dataset-multimodal-image-text.ipynb
+│
+├── experiment_results/                           # Stored evaluation metrics and plots
+│   └── V2_results/
+│       ├── best_model_acc.pth
+│       ├── confusion_matrix.png
+│       └── roc_curve.png
+│
 ├── README.md                                     # Main repository README (this file)
 └── .gitignore
 ```
