@@ -1,91 +1,84 @@
-# PneumoFusionNet-V2
-### Explainable Deep Learning Framework for Pneumonia Detection from Chest X-ray Images
+# PneumoFusionNet on MIMIC-CXR
+### Explainable Multimodal Deep Learning Framework for Pneumonia Detection from MIMIC-CXR Chest X-rays and Clinical Reports
 
-<p align="center">
-  <img src="images/architecture.png" width="900">
-</p>
+PneumoFusionNet is a state-of-the-art multimodal deep learning framework adapted for the MIMIC-CXR JPG dataset (P10 subset). The framework fuses chest X-ray images, clinical reports, and structured clinical laboratory values to diagnose binary pneumonia with high classification performance and clinical interpretability.
 
 ---
 
-## Overview
+## 🚀 Multimodal Diagnosis Roadmap
 
-PneumoFusionNet-V2 is an explainable deep learning framework designed for automated pneumonia detection from chest X-ray images.
+The framework is structured into three phases, following the methodology described in the paper:
+> *“A multi-modal deep learning solution for precise pneumonia diagnosis: the PneumoFusion-Net model”* (Frontiers in Physiology, 2025).
 
-The project leverages transfer learning, medical image preprocessing, Grad-CAM explainability, and deep feature extraction techniques to classify chest X-rays into:
-
-- NORMAL
-- PNEUMONIA
-
-The primary objective of this project is not only high classification performance but also visual interpretability for medical imaging applications.
-
----
-
-## Key Features
-
-- Transfer Learning based CNN Architecture
-- Explainable AI using Grad-CAM
-- Binary Chest X-ray Classification
-- ROC-AUC Evaluation
-- Early Stopping and Model Checkpointing
-- Confusion Matrix Visualization
-- Medical Image Augmentation Pipeline
-- High Recall for Pneumonia Detection
-
----
-
-## Dataset
-
-Dataset Used:
-### Chest X-ray Pneumonia Dataset
-
-Dataset link available in:
-
-```text
-dataset/dataset_link.txt
+```
+Phase 1: Image Only ──► Phase 2: Multimodal (Image + Text) ──► Phase 3: Multimodal + Lab Data
 ```
 
+### 1. Phase 1 — Chest X-ray Image Classifier
+- **Model**: Custom ResNet50 backbone + Depthwise Separable Convolution (DSC) + Global Context Spatial Attention (GCSA).
+- **Input**: Grayscale chest X-ray images (224x224).
+- **Output**: 1024-d image embeddings + Binary Pneumonia Classifier.
+- **Notebook**: [Phase-1mimic_image_classifier.ipynb](file:///C:/2026/PneumoFusionNet/mimic/mimic_pilot_139/Notebooks/Phase-1mimic_image_classifier.ipynb)
+
+### 2. Phase 2 — Multimodal Fusion (Image + Clinical Text)
+- **Model**: Fuses frozen 1024-d Phase 1 image embeddings with 768-d text representations from `emilyalsentzer/Bio_ClinicalBERT` (fine-tuning the last 2 transformer layers).
+- **Input**: Chest X-ray + Patient Clinical Text.
+- **Anti-Leakage Design**: Completely avoids the `impression` section of the radiology report (which contains the final diagnosis, causing label leakage). Instead, it reads the report and parses **everything except the IMPRESSION section** (clinical history, technique, comparison, findings) on-the-fly.
+- **Output**: 1792-d multimodal embeddings + Binary Pneumonia Classifier.
+- **Notebook**: [Phase-2-FINAL_multimodal_classifier.ipynb](file:///C:/2026/PneumoFusionNet/mimic/mimic_pilot_139/Notebooks/Phase-2-FINAL_multimodal_classifier.ipynb)
+
+### 3. Phase 3 — Multimodal + Lab Data Fusion (Upcoming)
+- **Model**: Will fuse the 1792-d multimodal image-text embeddings with structured MIMIC-IV laboratory values (WBC count, CRP, procalcitonin, etc.).
+
 ---
 
-## Model Architecture
+## 📊 Experimental Results
 
-The framework consists of the following stages:
+Both phases were trained using the exact same stratified 70/15/15 train/validation/test split (`SEED=42`) to prevent split-wise data leakage. 
 
-1. Chest X-ray Input
-2. Image Preprocessing & Augmentation
-3. Transfer Learning Backbone
-4. Deep Feature Extraction
-5. Global Average Pooling
-6. Fully Connected Classification Head
-7. Grad-CAM Explainability Module
+| Model | Test AUC | Test Accuracy | Test F1 (macro) |
+| :--- | :---: | :---: | :---: |
+| **Phase 1 (Image Only)** | 0.6667 | 0.7619 | 0.4300 |
+| **Phase 2 (Image + Report)** | **0.7037** | **0.8095** | **0.4474** |
+| **Multimodal Improvement** | **+0.0370** | **+0.0476** | **+0.0174** |
+
+*The addition of clinical report context (history + findings) without label leakage yields significant improvements in both AUC and overall diagnostic accuracy.*
 
 ---
 
-## Repository Structure
+## 📁 Repository Structure
+
+The code and outputs for the MIMIC pilot subset are organized under the `mimic/mimic_pilot_139/` subdirectory:
 
 ```text
 PneumoFusionNet/
 │
-├── notebooks/
-│   └── pneumofusionnet_final.ipynb
-│
-├── models/
-│   ├── best_model_acc.pth
-│   └── best_model_loss.pth
-│
-├── results/
-│   ├── confusion_matrix.png
-│   ├── roc_curve.png
-│   └── classification_report.txt
-│
-├── images/
-│   ├── architecture.png
-│   └── gradcam.png
-│
-├── dataset/
-│   └── dataset_link.txt
-│
-├── archive/
-│   └── v1_baseline_model.ipynb
+├── mimic/
+│   └── mimic_pilot_139/
+│       ├── dataset_139/
+│       │   ├── mimic_dataset.csv               # Baseline image dataset
+│       │   └── mimic_multimodal_dataset_v3.csv  # Multimodal metadata (without impression)
+│       │
+│       ├── reports/txt/                         # Raw patient report files (.txt)
+│       │
+│       ├── Notebooks/
+│       │   ├── Phase-1mimic_image_classifier.ipynb         # Phase 1 notebook
+│       │   └── Phase-2-FINAL_multimodal_classifier.ipynb   # Phase 2 notebook
+│       │
+│       ├── outputs/                              # Phase 1 checkpoints & plots
+│       │   ├── best_pneumofusion_mimic.pth       # Phase 1 model weights (102MB)
+│       │   ├── image_features_train.pt           # Extracted image features (train)
+│       │   ├── image_features_val.pt             # Extracted image features (val)
+│       │   └── image_features_test.pt            # Extracted image features (test)
+│       │
+│       └── outputs_phase2/                       # Phase 2 checkpoints & plots
+│           ├── best_phase2_multimodal.pth        # Phase 2 model weights (437MB)
+│           ├── fused_features_train.pt           # Extracted 1792-d features (train)
+│           ├── fused_features_val.pt             # Extracted 1792-d features (val)
+│           ├── fused_features_test.pt            # Extracted 1792-d features (test)
+│           ├── phase1_vs_phase2_comparison.png   # Performance comparison chart
+│           ├── phase2_results.png                # Confusion matrix & ROC curve
+│           └── phase2_training_history.png       # Training curves
 │
 ├── README.md
 └── .gitignore
@@ -93,118 +86,18 @@ PneumoFusionNet/
 
 ---
 
-## Experimental Results
+## ⚙️ Technologies Used
 
-| Metric | Score |
-|--------|--------|
-| Accuracy | 92.15% |
-| ROC-AUC | 0.9776 |
-| Precision | 0.92 |
-| Recall | 0.92 |
-| F1-Score | 0.92 |
+- **Frameworks**: Python, PyTorch, PyTorch Lightning
+- **Backbone models**: ResNet50 (pre-trained), Emily Alsentzer's Bio_ClinicalBERT
+- **Libraries**: HuggingFace Transformers, Pandas, NumPy, Matplotlib, Seaborn, Scikit-learn
+- **Hardware**: CUDA-enabled GPUs (NVIDIA RTX 3050 Laptop GPU)
 
 ---
 
-## Classification Report
-
-| Class | Precision | Recall | F1-Score |
-|------|------|------|------|
-| NORMAL | 0.96 | 0.83 | 0.89 |
-| PNEUMONIA | 0.90 | 0.98 | 0.94 |
-
----
-
-## Confusion Matrix
-
-<p align="center">
-  <img src="results/confusion_matrix.png" width="500">
-</p>
-
-### Confusion Matrix Analysis
-
-- True Normal Predicted Normal: 194
-- True Normal Predicted Pneumonia: 40
-- True Pneumonia Predicted Normal: 9
-- True Pneumonia Predicted Pneumonia: 381
-
-The model demonstrates very high recall for pneumonia detection, minimizing false negatives in medical diagnosis.
-
----
-
-## ROC Curve
-
-<p align="center">
-  <img src="results/roc_curve.png" width="500">
-</p>
-
-The ROC-AUC score of **0.9776** indicates excellent discriminative performance for pneumonia classification.
-
----
-
-## Explainability using Grad-CAM
-
-Grad-CAM visualization is used to highlight the lung regions responsible for model predictions, improving interpretability and trustworthiness in medical imaging applications.
-
-<p align="center">
-  <img src="images/gradcam.png" width="600">
-</p>
-
----
-
-## Technologies Used
-
-- Python
-- PyTorch
-- OpenCV
-- NumPy
-- Matplotlib
-- Scikit-learn
-- Grad-CAM
-- Transfer Learning
-
----
-
-## Future Work
-
-- Integration with MIMIC-CXR dataset
-- Clinical report generation
-- Multimodal medical AI pipeline
-- Transformer-based architectures
-- External dataset validation
-- Advanced explainable AI methods
-
----
-
-## Installation
-
-```bash
-git clone https://github.com/your-username/PneumoFusionNet.git
-
-cd PneumoFusionNet
-
-pip install -r requirements.txt
-```
-
----
-
-## Usage
-
-Run the final notebook:
-
-```bash
-notebooks/pneumofusionnet_final.ipynb
-```
-
----
-
-## Author
+## 👨‍💻 Author
 
 ### Ashutosh Yadav
-- IIT Guwahati
-- Data Science & AI
-
----
-
-## License
-
-This project is intended for educational and research purposes only.
+- **Affiliation**: Indian Institute of Technology Guwahati (IIT Guwahati)
+- **Specialization**: B.Sc. in Data Science & Artificial Intelligence
+- **Email**: [ay346185@gmail.com](mailto:ay346185@gmail.com)
