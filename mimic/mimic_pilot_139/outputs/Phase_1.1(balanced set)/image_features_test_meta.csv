@@ -1,0 +1,8 @@
+subject_id,study_id,label,label_name,split
+10001884,57839849,0,Normal,test
+10002428,57887188,1,Pneumonia,test
+10010231,51428987,0,Normal,test
+10000898,50771383,0,Normal,test
+10012292,53627836,1,Pneumonia,test
+10012261,58270659,1,Pneumonia,test
+10001122,53957785,0,Normal,test
