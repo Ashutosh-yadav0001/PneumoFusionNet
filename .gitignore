@@ -38,3 +38,7 @@ add_install.py
 read_nb.py
 split_data.py
 verify.py
+
+# Docs & Reports (Keep assignment submissions strictly local)
+docs/
+
