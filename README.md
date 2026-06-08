@@ -1,40 +1,73 @@
-# PneumoFusionNet on MIMIC-CXR
-### Explainable Multimodal Deep Learning Framework for Pneumonia Detection from MIMIC-CXR Chest X-rays and Clinical Reports
+# 🫁 PneumoFusionNet on MIMIC-CXR
 
-PneumoFusionNet is a state-of-the-art multimodal deep learning framework adapted for the MIMIC-CXR JPG dataset (P10 subset). The framework fuses chest X-ray images, clinical reports, and structured clinical laboratory values to diagnose binary pneumonia with high classification performance and clinical interpretability.
+[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-1.12.1-red.svg)](https://pytorch.org/)
+[![HuggingFace Transformers](https://img.shields.io/badge/%F0%9F%A4%97-Transformers-orange)](https://huggingface.co/docs/transformers/index)
+[![Dataset](https://img.shields.io/badge/PhysioNet-MIMIC--CXR--JPG-lightgrey)](https://physionet.org/content/mimic-cxr-jpg/2.0.0/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
+> **Explainable Multimodal Deep Learning Framework for Pneumonia Detection from MIMIC-CXR Chest X-rays and Clinical Reports**  
+> Adapting the **PneumoFusionNet** architecture (originally proposed in *Frontiers in Physiology, 2025*) to the MIMIC-CXR medical imaging dataset.
 
 ---
 
-## 🚀 Multimodal Diagnosis Roadmap
+## 📋 Project Overview
 
-The framework is structured into three phases, following the methodology described in the paper:
-> *“A multi-modal deep learning solution for precise pneumonia diagnosis: the PneumoFusion-Net model”* (Frontiers in Physiology, 2025).
+PneumoFusionNet is a state-of-the-art multimodal deep learning framework designed to diagnose binary pneumonia by fusing information from multiple clinical modalities. This repository implements a pipeline using the **MIMIC-CXR JPG** dataset (P10 subset) across multiple research phases:
 
 ```
-Phase 1: Image Only ──► Phase 2: Multimodal (Image + Text) ──► Phase 3: Multimodal + Lab Data
+Phase 1: Image Only ──► Phase 2: Multimodal (Image + Text) ──► Phase 3: Multimodal + Lab Data (Upcoming)
 ```
 
-### 1. Phase 1 — Chest X-ray Image Classifier
-- **Model**: Custom ResNet50 backbone + Depthwise Separable Convolution (DSC) + Global Context Spatial Attention (GCSA).
-- **Input**: Grayscale chest X-ray images (224x224).
-- **Output**: 1024-d image embeddings + Binary Pneumonia Classifier.
-- **Notebook**: [Phase-1mimic_image_classifier.ipynb](file:///C:/2026/PneumoFusionNet/mimic/mimic_pilot_139/Notebooks/Phase-1mimic_image_classifier.ipynb)
+1. **Phase 1 (Chest X-ray Image Classifier)**: Extracting visual embeddings using a custom CNN backbone enhanced with spatial attention.
+2. **Phase 2 (Multimodal Fusion)**: Fusing visual embeddings with ClinicalBERT representations parsed from raw radiology text reports.
+3. **Phase 3 (Lab Data Integration)**: Extending the fusion network to incorporate tabular laboratory measurements (WBC, CRP, etc.) from MIMIC-IV.
 
-### 2. Phase 2 — Multimodal Fusion (Image + Clinical Text)
-- **Model**: Fuses frozen 1024-d Phase 1 image embeddings with 768-d text representations from `emilyalsentzer/Bio_ClinicalBERT` (fine-tuning the last 2 transformer layers).
-- **Input**: Chest X-ray + Patient Clinical Text.
-- **Anti-Leakage Design**: Completely avoids the `impression` section of the radiology report (which contains the final diagnosis, causing label leakage). Instead, it reads the report and parses **everything except the IMPRESSION section** (clinical history, technique, comparison, findings) on-the-fly.
-- **Output**: 1792-d multimodal embeddings + Binary Pneumonia Classifier.
-- **Notebook**: [Phase-2-FINAL_multimodal_classifier.ipynb](file:///C:/2026/PneumoFusionNet/mimic/mimic_pilot_139/Notebooks/Phase-2-FINAL_multimodal_classifier.ipynb)
+---
 
-### 3. Phase 3 — Multimodal + Lab Data Fusion (Upcoming)
-- **Model**: Will fuse the 1792-d multimodal image-text embeddings with structured MIMIC-IV laboratory values (WBC count, CRP, procalcitonin, etc.).
+## 🏗️ Architecture & Pipeline
+
+```mermaid
+graph TD
+    subgraph Phase 1: Visual Network
+        Img[Chest X-ray Image] --> ResNet[ResNet50 Backbone]
+        ResNet --> DSC[Depthwise Separable Conv]
+        DSC --> GCSA[Global Context Spatial Attention]
+        GCSA --> ImgEmb[1024-d Image Embedding]
+    end
+
+    subgraph Phase 2: Multimodal Fusion
+        Report[Radiology Report Text] --> Clean[Exclude IMPRESSION Section]
+        Clean --> BERT[Bio_ClinicalBERT Encoder]
+        BERT --> TextEmb[768-d Text Embedding]
+        ImgEmb & TextEmb --> Concat[Concatenation: 1792-d]
+        Concat --> MLP[Fusion MLP Classifier]
+        MLP --> Out[Binary Pneumonia Classifier]
+    end
+```
+
+### Key Components
+
+*   **ResNet50 Backbone**: Deep feature extractor pre-trained on ImageNet.
+*   **Depthwise Separable Convolution (DSC)**: Dramatically reduces feature dimensions from 2048 to 1024 with minimal parameter overhead.
+*   **Global Context Spatial Attention (GCSA)**: Focuses the feature extractor on key pathological areas of the chest X-rays.
+*   **Bio_ClinicalBERT**: A BERT transformer model pre-trained on clinical notes from MIMIC-III, capturing medical text semantics.
+
+---
+
+## 🔒 Anti-Leakage & Anti-Cheating Design
+
+Radiology report summaries (specifically the `IMPRESSION` or `CONCLUSION` sections) routinely contain the final diagnoses. Training a model on these sections causes **label leakage** (the model reads the doctor's final diagnosis instead of diagnosing from the medical findings).
+
+To prevent this, our pipeline implements a **strict text-filtering strategy**:
+*   The raw report is parsed, and the `IMPRESSION` section is **completely removed** on-the-fly.
+*   The model must rely entirely on the image coupled with the clinical history, comparison statements, and findings sections of the report to make its classification.
 
 ---
 
 ## 📊 Experimental Results
 
-Both phases were trained using the exact same stratified 70/15/15 train/validation/test split (`SEED=42`) to prevent split-wise data leakage. 
+Both phases were trained using the exact same stratified 70/15/15 train/validation/test split (`SEED=42`) for a fair and leakage-free comparison.
 
 | Model | Test AUC | Test Accuracy | Test F1 (macro) |
 | :--- | :---: | :---: | :---: |
@@ -42,62 +75,104 @@ Both phases were trained using the exact same stratified 70/15/15 train/validati
 | **Phase 2 (Image + Report)** | **0.7037** | **0.8095** | **0.4474** |
 | **Multimodal Improvement** | **+0.0370** | **+0.0476** | **+0.0174** |
 
-*The addition of clinical report context (history + findings) without label leakage yields significant improvements in both AUC and overall diagnostic accuracy.*
+*Integrating clinical text reports (even without the diagnostic impression) provides a significant diagnostic boost over chest X-rays alone.*
 
 ---
 
 ## 📁 Repository Structure
 
-The code and outputs for the MIMIC pilot subset are organized under the `mimic/mimic_pilot_139/` subdirectory:
-
 ```text
 PneumoFusionNet/
 │
 ├── mimic/
-│   └── mimic_pilot_139/
-│       ├── dataset_139/
-│       │   ├── mimic_dataset.csv               # Baseline image dataset
-│       │   └── mimic_multimodal_dataset_v3.csv  # Multimodal metadata (without impression)
-│       │
-│       ├── reports/txt/                         # Raw patient report files (.txt)
-│       │
-│       ├── Notebooks/
-│       │   ├── Phase-1mimic_image_classifier.ipynb         # Phase 1 notebook
-│       │   └── Phase-2-FINAL_multimodal_classifier.ipynb   # Phase 2 notebook
-│       │
-│       ├── outputs/                              # Phase 1 checkpoints & plots
-│       │   ├── best_pneumofusion_mimic.pth       # Phase 1 model weights (102MB)
-│       │   ├── image_features_train.pt           # Extracted image features (train)
-│       │   ├── image_features_val.pt             # Extracted image features (val)
-│       │   └── image_features_test.pt            # Extracted image features (test)
-│       │
-│       └── outputs_phase2/                       # Phase 2 checkpoints & plots
-│           ├── best_phase2_multimodal.pth        # Phase 2 model weights (437MB)
-│           ├── fused_features_train.pt           # Extracted 1792-d features (train)
-│           ├── fused_features_val.pt             # Extracted 1792-d features (val)
-│           ├── fused_features_test.pt            # Extracted 1792-d features (test)
-│           ├── phase1_vs_phase2_comparison.png   # Performance comparison chart
-│           ├── phase2_results.png                # Confusion matrix & ROC curve
-│           └── phase2_training_history.png       # Training curves
+│   ├── mimic_pilot_139/
+│   │   ├── dataset_139/
+│   │   │   ├── mimic_dataset.csv               # Image-only baseline dataset (139 samples)
+│   │   │   └── mimic_multimodal_dataset_v3.csv  # Multimodal dataset metadata (no impression)
+│   │   │
+│   │   ├── reports/txt/                         # Raw text radiology reports (.txt)
+│   │   │
+│   │   ├── Notebooks/
+│   │   │   ├── Phase-1.1mimic_image_classifier(balanced-Set).ipynb  # Phase 1 notebook
+│   │   │   └── Phase-2_multimodal_fusion.ipynb                      # Phase 2 notebook
+│   │   │
+│   │   └── outputs/                              # Evaluation outputs & metrics
+│   │       ├── phase_1/
+│   │       │   ├── confusion_matrix.png          # Phase 1 test confusion matrix
+│   │       │   ├── roc_curve.png                 # Phase 1 ROC curve (AUC=0.6667)
+│   │       │   └── training_history.png          # Loss/accuracy curves
+│   │       │
+│   │       ├── Phase_1.1(balanced set)/
+│   │       │   └── confusion_matrix.png
+│   │       │
+│   │       └── phase_2/
+│   │           ├── phase1_vs_phase2_comparison.png  # Visualizing AUC improvement
+│   │           ├── phase2_results.png               # Multimodal metrics
+│   │           └── phase2_training_history.png      # Multimodal training history
+│   │
+│   ├── .gitignore
+│   ├── README.md
+│   └── requirements.txt
 │
-├── README.md
+├── README.md                                     # Main repository README (this file)
 └── .gitignore
 ```
 
 ---
 
-## ⚙️ Technologies Used
+## ⚙️ Setup & Installation
 
-- **Frameworks**: Python, PyTorch, PyTorch Lightning
-- **Backbone models**: ResNet50 (pre-trained), Emily Alsentzer's Bio_ClinicalBERT
-- **Libraries**: HuggingFace Transformers, Pandas, NumPy, Matplotlib, Seaborn, Scikit-learn
-- **Hardware**: CUDA-enabled GPUs (NVIDIA RTX 3050 Laptop GPU)
+### Prerequisites
+*   Python 3.10+
+*   NVIDIA GPU with CUDA support (e.g., NVIDIA RTX 3050 Laptop GPU, CUDA 11.2+)
+
+### 1. Clone & Initialize Environment
+```bash
+git clone https://github.com/Ashutosh-yadav0001/PneumoFusionNet.git
+cd PneumoFusionNet
+
+# Create a python virtual environment
+python -m venv mimic/venv_PneumoFusionNet
+source mimic/venv_PneumoFusionNet/bin/activate  # On Linux/macOS
+# OR
+mimic\venv_PneumoFusionNet\Scripts\activate     # On Windows
+```
+
+### 2. Install PyTorch & Core Libraries
+Install PyTorch with CUDA support. For CUDA 11.2+:
+```bash
+pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113
+```
+
+Install remaining dependencies:
+```bash
+pip install -r mimic/requirements.txt
+```
+
+### 3. Launch Notebooks
+```bash
+# Register the environment kernel with Jupyter
+python -m ipykernel install --user --name=venv_PneumoFusionNet --display-name "PneumoFusionNet"
+
+# Launch Jupyter
+jupyter lab
+```
+
+---
+
+## 🔑 Data Access Warning
+
+MIMIC-CXR and MIMIC-IV are restricted-access datasets. To download the clinical notes and image paths used here:
+1. Complete the CITI training course on human subjects research.
+2. Sign the PhysioNet Data Use Agreement (DUA).
+3. Request access via the [PhysioNet MIMIC-CXR Page](https://physionet.org/content/mimic-cxr-jpg/2.0.0/).
 
 ---
 
 ## 👨‍💻 Author
 
-### Ashutosh Yadav
-- **Affiliation**: Indian Institute of Technology Guwahati (IIT Guwahati)
-- **Specialization**: B.Sc. in Data Science & Artificial Intelligence
-- **Email**: [ay346185@gmail.com](mailto:ay346185@gmail.com)
+**Ashutosh Yadav**  
+*   **Affiliation**: Indian Institute of Technology Guwahati (IIT Guwahati)  
+*   **Specialization**: B.Sc. in Data Science & Artificial Intelligence  
+*   **Email**: [ay346185@gmail.com](mailto:ay346185@gmail.com)  
+*   **GitHub**: [@Ashutosh-yadav0001](https://github.com/Ashutosh-yadav0001)  
