@@ -172,6 +172,14 @@ jupyter lab
 
 ---
 
+## 📦 Data Subset Preparation (1,000 Cohort)
+
+For replicating the multimodal pipeline with a larger, balanced cohort of 1,000 cases (500 Pneumonia, 500 Normal), we have provided a detailed step-by-step data extraction, download, and pairing guide.
+
+👉 **Refer to the [MIMIC-CXR 1,000 Cohort Data Preparation Guide](mimic/1000_dataset/README.md)** for complete details on how to recreate this dataset.
+
+---
+
 ## 🔑 Data Access Warning
 
 MIMIC-CXR and MIMIC-IV are restricted-access datasets. To download the clinical notes and image paths used here:
