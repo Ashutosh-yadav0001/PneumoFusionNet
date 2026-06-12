@@ -67,15 +67,16 @@ To prevent this, our pipeline implements a **strict text-filtering strategy**:
 
 ## 📊 Experimental Results
 
-Both phases were trained using the exact same stratified 70/15/15 train/validation/test split (`SEED=42`) for a fair and leakage-free comparison.
+All pilot phases were trained using the exact same stratified 70/15/15 train/validation/test split (`SEED=42`) for a fair and leakage-free comparison.
 
-| Model | Test AUC | Test Accuracy | Test F1 (macro) |
-| :--- | :---: | :---: | :---: |
-| **Phase 1 (Image Only)** | 0.6667 | 0.7619 | 0.4300 |
-| **Phase 2 (Image + Report)** | **0.7037** | **0.8095** | **0.4474** |
-| **Multimodal Improvement** | **+0.0370** | **+0.0476** | **+0.0174** |
+| Phase | Modality | Dataset Strategy | Test AUC | Test Accuracy | Test F1 (macro) |
+| :--- | :--- | :--- | :---: | :---: | :---: |
+| **Phase 1** | Image Only | Imbalanced (118:21) | 0.6667 | 0.7619 | 0.4300 |
+| **Phase 1.1** | Image Only | **Balanced (21:21)** | **0.9167** | **0.8571** | **0.8571** |
+| **Phase 2** | Image + Text | Imbalanced (118:21) | 0.7037 | 0.8095 | 0.4474 |
+| **Phase 2.1** | Image + Text | **Balanced (21:21)** | **0.9167** | **0.7143** | **0.7083** |
 
-*Integrating clinical text reports (even without the diagnostic impression) provides a significant diagnostic boost over chest X-rays alone.*
+*Integrating clinical text reports (even without the diagnostic impression) provides a significant diagnostic boost over chest X-rays alone on imbalanced sets, and matches the high AUC of image-only models on balanced sets while providing multimodal context.*
 
 ---
 
@@ -93,22 +94,20 @@ PneumoFusionNet/
 │   │   ├── reports/txt/                         # Raw text radiology reports (.txt)
 │   │   │
 │   │   ├── Notebooks/
-│   │   │   ├── Phase-1.1mimic_image_classifier(balanced-Set).ipynb  # Phase 1 notebook
-│   │   │   └── Phase-2_multimodal_fusion.ipynb                      # Phase 2 notebook
+│   │   │   ├── Phase-1mimic_image_classifier.ipynb                 # Phase 1: Image only (Imbalanced baseline)
+│   │   │   ├── Phase-1.1mimic_image_classifier(balanced-Set).ipynb  # Phase 1.1: Image only (Balanced cohort)
+│   │   │   ├── Phase-2-FINAL_multimodal_classifier.ipynb            # Phase 2: Multimodal (Imbalanced)
+│   │   │   └── Phase-2.1-multimodal_classifier(balanced-Set).ipynb  # Phase 2.1: Multimodal (Balanced)
 │   │   │
-│   │   └── outputs/                              # Evaluation outputs & metrics
-│   │       ├── phase_1/
-│   │       │   ├── confusion_matrix.png          # Phase 1 test confusion matrix
-│   │       │   ├── roc_curve.png                 # Phase 1 ROC curve (AUC=0.6667)
-│   │       │   └── training_history.png          # Loss/accuracy curves
-│   │       │
-│   │       ├── Phase_1.1(balanced set)/
-│   │       │   └── confusion_matrix.png
-│   │       │
-│   │       └── phase_2/
-│   │           ├── phase1_vs_phase2_comparison.png  # Visualizing AUC improvement
-│   │           ├── phase2_results.png               # Multimodal metrics
-│   │           └── phase2_training_history.png      # Multimodal training history
+│   │   ├── outputs/                              # Evaluation outputs & checkpoints
+│   │   │   ├── phase_1/                          # Phase 1 metrics and weights
+│   │   │   ├── Phase_1.1(balanced set)/          # Phase 1.1 metrics and weights
+│   │   │   ├── phase_2/                          # Phase 2 metrics and weights
+│   │   │   └── Phase_2.1(balanced set)/          # Phase 2.1 metrics and weights
+│   │   │
+│   │   ├── README.md                             # Sub-directory documentation
+│   │   └── pilot_experiment_summary.md           # Research analysis and roadmap report
+
 │   │
 │   ├── .gitignore
 │   ├── README.md
