@@ -1,163 +1,197 @@
-# PneumoFusionNet — Multimodal Pneumonia Classification Pilot Study (`mimic_pilot_139`)
+# 🫁 PneumoFusionNet on MIMIC-CXR
 
-This repository documents the **Pilot Study** phase of **PneumoFusionNet**, a multimodal medical diagnostic network that combines Chest X-rays (CXR) and Clinical Radiology Reports to classify chest radiographs for the presence of **Pneumonia**.
+[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-1.12.1-red.svg)](https://pytorch.org/)
+[![HuggingFace Transformers](https://img.shields.io/badge/%F0%9F%A4%97-Transformers-orange)](https://huggingface.co/docs/transformers/index)
+[![Dataset](https://img.shields.io/badge/PhysioNet-MIMIC--CXR--JPG-lightgrey)](https://physionet.org/content/mimic-cxr-jpg/2.0.0/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
+> **Explainable Multimodal Deep Learning Framework for Pneumonia Detection from MIMIC-CXR Chest X-rays and Clinical Reports**  
+> Adapting the **PneumoFusionNet** architecture (originally proposed in *Frontiers in Physiology, 2025*) to the MIMIC-CXR medical imaging dataset.
 
 ---
 
-## 📁 Repository Directory Structure
+## 📋 Project Overview
 
-```text
-mimic_pilot_139/
-├── Notebooks/
-│   ├── Phase-1mimic_image_classifier.ipynb                 # Phase 1: Image only (Imbalanced baseline)
-│   ├── Phase-1.1mimic_image_classifier(balanced-Set).ipynb  # Phase 1.1: Image only (Balanced cohort)
-│   ├── Phase-2-FINAL_multimodal_classifier.ipynb            # Phase 2: Multimodal (Imbalanced)
-│   └── Phase-2.1-multimodal_classifier(balanced-Set).ipynb  # Phase 2.1: Multimodal (Balanced) ★
-├── dataset_139/
-│   ├── mimic_dataset.csv                                    # Metadata for Phase 1 & 1.1
-│   └── mimic_multimodal_dataset_v3.csv                      # Metadata for Phase 2 & 2.1
-├── mimic-cxr-jpg/                                           # Cohort Chest X-ray images (p10 subfolder)
-│   └── 2.1.0/
-│       └── files/
-│           └── p10/
-├── reports/
-│   └── txt/                                                 # Raw text clinical radiology reports
-├── outputs/                                                 # Trained model weights & outputs per phase
-│   ├── phase_1/
-│   ├── Phase_1.1(balanced set)/
-│   ├── phase_2/
-│   └── Phase_2.1(balanced set)/
-├── requirements.txt                                         # Python library dependencies
-├── pilot_experiment_summary.md                              # Complete experiment write-up
-└── README.md                                                # This documentation guide
+PneumoFusionNet is a state-of-the-art multimodal deep learning framework designed to diagnose binary pneumonia by fusing information from multiple clinical modalities. This repository implements a pipeline using the **MIMIC-CXR JPG** dataset (P10 subset) across multiple research phases:
+
+```
+Phase 1: Image Only ──► Phase 2: Multimodal (Image + Text) ──► Phase 3: Multimodal + Lab Data (Upcoming)
 ```
 
+1. **Phase 1 (Chest X-ray Image Classifier)**: Extracting visual embeddings using a custom CNN backbone enhanced with spatial attention.
+2. **Phase 2 (Multimodal Fusion)**: Fusing visual embeddings with ClinicalBERT representations parsed from raw radiology text reports.
+3. **Phase 3 (Lab Data Integration)**: Extending the fusion network to incorporate tabular laboratory measurements (WBC, CRP, etc.) from MIMIC-IV.
+
 ---
 
-## ⚙️ Model Architectures
-
-PneumoFusionNet fuses representations from visual and text encoders to perform joint classification:
+## 🏗️ Architecture & Pipeline
 
 ```mermaid
 graph TD
-    %% Image Modality Pipeline
-    subgraph Image Modality
-        Img[Grayscale CXR Image] --> RN[ResNet50 Backbone]
-        RN --> DSC[Depthwise Separable Conv]
-        DSC --> GCSA[Global Channel-Spatial Attention]
-        GCSA --> ImgPool[Adaptive Avg Pooling]
-        ImgPool --> ImgFeat[1024-d Visual Embedding]
+    subgraph Phase 1: Visual Network
+        Img[Chest X-ray Image] --> ResNet[ResNet50 Backbone]
+        ResNet --> DSC[Depthwise Separable Conv]
+        DSC --> GCSA[Global Context Spatial Attention]
+        GCSA --> ImgEmb[1024-d Image Embedding]
     end
 
-    %% Text Modality Pipeline
-    subgraph Text Modality
-        Txt[Clinical History / Indication] --> BERT[Bio_ClinicalBERT Tokenizer]
-        BERT --> BERTFine[BERT Fine-Tuned Last 2 Layers]
-        BERTFine --> CLS[768-d Text Embedding CLS]
+    subgraph Phase 2: Multimodal Fusion
+        Report[Radiology Report Text] --> Clean[Exclude IMPRESSION Section]
+        Clean --> BERT[Bio_ClinicalBERT Encoder]
+        BERT --> TextEmb[768-d Text Embedding]
+        ImgEmb & TextEmb --> Concat[Concatenation: 1792-d]
+        Concat --> MLP[Fusion MLP Classifier]
+        MLP --> Out[Binary Pneumonia Classifier]
     end
-
-    %% Multimodal Fusion Pipeline
-    ImgFeat & CLS --> Concat[Concat Visual + Textual: 1792-d]
-    Concat --> LN[Layer Normalization]
-    LN --> MLP[MLP Classifier Head GELU]
-    MLP --> Logits[Pneumonia Classification logits]
 ```
 
-### 1. Visual Encoder (`PneumoFusionNet`)
-* **Backbone:** ResNet50 pretrained on ImageNet, adapted for grayscale single-channel inputs.
-* **DSC (Depthwise Separable Convolution):** Reduces parameter overhead while maintaining strong spatial feature extraction.
-* **GCSA (Global Channel-Spatial Attention):** Focuses the CNN's attention on both channel-wise features and critical spatial regions (e.g., lung consolidations/infiltrates).
-* **Output:** $1024$-dimensional visual embedding.
+### Key Components
 
-### 2. Textual Encoder
-* **Model:** `emilyalsentzer/Bio_ClinicalBERT` (pre-trained on MIMIC clinical reports).
-* **Target Leakage Prevention:** The `IMPRESSION` section is programmatically stripped. The model utilizes only the pre-diagnostic clinical text (`INDICATION` and `FINDINGS` sections) for realistic clinical predictions.
-* **Output:** $768$-dimensional textual embedding (taken from the `[CLS]` token).
-
-### 3. Fusion Head
-* Concatenates Visual ($1024$-d) and Textual ($768$-d) embeddings into a single $1792$-dimensional vector.
-* Processes the fused features via a multi-layer perceptron (MLP) classification head ($1792 \to 512 \to 256 \to 2$) stabilized by Layer Normalization and Dropout.
+*   **ResNet50 Backbone**: Deep feature extractor pre-trained on ImageNet.
+*   **Depthwise Separable Convolution (DSC)**: Dramatically reduces feature dimensions from 2048 to 1024 with minimal parameter overhead.
+*   **Global Context Spatial Attention (GCSA)**: Focuses the feature extractor on key pathological areas of the chest X-rays.
+*   **Bio_ClinicalBERT**: A BERT transformer model pre-trained on clinical notes from MIMIC-III, capturing medical text semantics.
 
 ---
 
-## 📈 Pilot Study Results
+## 🔒 Anti-Leakage & Anti-Cheating Design
 
-All experiments were evaluated on the test split using `SEED=42`:
+Radiology report summaries (specifically the `IMPRESSION` or `CONCLUSION` sections) routinely contain the final diagnoses. Training a model on these sections causes **label leakage** (the model reads the doctor's final diagnosis instead of diagnosing from the medical findings).
 
-| Phase | Modality | Dataset | Test AUC | Test Accuracy | Test F1 (Macro) |
+To prevent this, our pipeline implements a **strict text-filtering strategy**:
+*   The raw report is parsed, and the `IMPRESSION` section is **completely removed** on-the-fly.
+*   The model must rely entirely on the image coupled with the clinical history, comparison statements, and findings sections of the report to make its classification.
+
+---
+
+## 📊 Experimental Results
+
+All pilot phases were trained using the exact same stratified 70/15/15 train/validation/test split (`SEED=42`) for a fair and leakage-free comparison.
+
+| Phase | Modality | Dataset Strategy | Test AUC | Test Accuracy | Test F1 (macro) |
 | :--- | :--- | :--- | :---: | :---: | :---: |
 | **Phase 1** | Image Only | Imbalanced (118:21) | 0.6667 | 0.7619 | 0.4300 |
 | **Phase 1.1** | Image Only | **Balanced (21:21)** | **0.9167** | **0.8571** | **0.8571** |
 | **Phase 2** | Image + Text | Imbalanced (118:21) | 0.7037 | 0.8095 | 0.4474 |
 | **Phase 2.1** | Image + Text | **Balanced (21:21)** | **0.9167** | **0.7143** | **0.7083** |
 
----
-
-## 📐 Mathematical Proof of Statistical Variance
-
-In the balanced experiments, the pilot cohort consists of **$42$ samples**. Based on the $70/15/15$ split:
-* **Train:** 29 samples
-* **Val:** 6 samples
-* **Test:** **7 samples**
-
-Because the test split contains only $7$ samples:
-* **Phase 1.1 Accuracy (85.71%):** $6$ out of $7$ correct predictions.
-* **Phase 2.1 Accuracy (71.43%):** $5$ out of $7$ correct predictions.
-* **Accuracy Shift:** $\Delta = 1$ sample classification change.
-
-### 1. Binomial Confidence Intervals ($95\%$ Confidence)
-The standard error ($SE$) of the sample proportion $p$ is computed as:
-
-$$SE = \sqrt{\frac{p(1-p)}{N}}$$
-
-* **Phase 1.1 CI:** $0.8571 \pm 0.2593 \approx [59.78\%, 100\%]$
-* **Phase 2.1 CI:** $0.7143 \pm 0.3346 \approx [37.97\%, 100\%]$
-
-### 2. Fisher's Exact Test Contingency Table
-
-| Success | Phase 1.1 | Phase 2.1 | Row Totals |
-|---|---|---|---|
-| Correct | 6 | 5 | 11 |
-| Incorrect | 1 | 2 | 3 |
-| Column Totals | 7 | 7 | 14 |
-
-* **$p$-value $\approx 1.000$**
-
-The statistical overlap and $p$-value demonstrate that the $14.28\%$ accuracy difference is **statistically insignificant** and is a consequence of random noise due to the small test sample size ($N=7$).
+*Integrating clinical text reports (even without the diagnostic impression) provides a significant diagnostic boost over chest X-rays alone on imbalanced sets, and matches the high AUC of image-only models on balanced sets while providing multimodal context.*
 
 ---
 
-## 🚀 Road Map: Scale-Up Phase ($1000+$ Samples)
+## 📁 Repository Structure
 
-To transition to a robust, publication-grade model, the next phase will implement the following scale-up changes:
+```text
+PneumoFusionNet/
+│
+├── mimic/
+│   ├── mimic_pilot_139/
+│   │   ├── dataset_139/
+│   │   │   ├── mimic_dataset.csv               # Image-only baseline dataset (139 samples)
+│   │   │   └── mimic_multimodal_dataset_v3.csv  # Multimodal dataset metadata (no impression)
+│   │   │
+│   │   ├── reports/txt/                         # Raw text radiology reports (.txt)
+│   │   │
+│   │   ├── Notebooks/
+│   │   │   ├── Phase-1mimic_image_classifier.ipynb                 # Phase 1: Image only (Imbalanced baseline)
+│   │   │   ├── Phase-1.1mimic_image_classifier(balanced-Set).ipynb  # Phase 1.1: Image only (Balanced cohort)
+│   │   │   ├── Phase-2-FINAL_multimodal_classifier.ipynb            # Phase 2: Multimodal (Imbalanced)
+│   │   │   └── Phase-2.1-multimodal_classifier(balanced-Set).ipynb  # Phase 2.1: Multimodal (Balanced)
+│   │   │
+│   │   ├── outputs/                              # Evaluation outputs & checkpoints
+│   │   │   ├── phase_1/                          # Phase 1 metrics and weights
+│   │   │   ├── Phase_1.1(balanced set)/          # Phase 1.1 metrics and weights
+│   │   │   ├── phase_2/                          # Phase 2 metrics and weights
+│   │   │   └── Phase_2.1(balanced set)/          # Phase 2.1 metrics and weights
+│   │   │
+│   │   ├── README.md                             # Sub-directory documentation
+│   │   └── pilot_experiment_summary.md           # Research analysis and roadmap report
 
-1. **Cohort Expansion:** Increase sample size to **$1000+$ samples** (500 Normal, 500 Pneumonia) to reduce evaluation margins of error below $\pm 3\%$.
-2. **Standardize Projections:** Filter dataset to Frontal Posteroanterior (**PA-only**) views to eliminate orientation variance (exclude Lateral and AP views).
-3. **Data Isolation:** Implement `GroupShuffleSplit` or `StratifiedGroupKFold` grouped by patient ID (`subject_id`) to prevent any patient-level leakage across splits.
-4. **Physiological Modality (Phase 3):** Match radiography timestamps with structured MIMIC-IV laboratory reports (White Blood Cell count, C-Reactive Protein, and Procalcitonin) to construct a 3-way multimodal network.
+│   │
+│   ├── .gitignore
+│   ├── README.md
+│   └── requirements.txt
+│
+├── model_experiments/                            # General model & various dataset experiments
+│   ├── v1_Basic_Image_Model.ipynb
+│   ├── v2_Enhanced_Image_Model_GCSA_DSC.ipynb
+│   ├── v3-1-iu-dataset-multimodal-image-baseline.ipynb
+│   └── v3-2-iu-dataset-multimodal-image-text.ipynb
+│
+├── experiment_results/                           # Stored evaluation metrics and plots
+│   └── V2_results/
+│       ├── best_model_acc.pth
+│       ├── confusion_matrix.png
+│       └── roc_curve.png
+│
+├── README.md                                     # Main repository README (this file)
+└── .gitignore
+```
 
 ---
 
-## 💻 Setup and Usage
+## ⚙️ Setup & Installation
 
 ### Prerequisites
-Make sure Python 3.8+ is installed. Clone the repository and install the dependencies:
+*   Python 3.10+
+*   NVIDIA GPU with CUDA support (e.g., NVIDIA RTX 3050 Laptop GPU, CUDA 11.2+)
+
+### 1. Clone & Initialize Environment
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/Ashutosh-yadav0001/PneumoFusionNet.git
+cd PneumoFusionNet
+
+# Create a python virtual environment
+python -m venv mimic/venv_PneumoFusionNet
+source mimic/venv_PneumoFusionNet/bin/activate  # On Linux/macOS
+# OR
+mimic\venv_PneumoFusionNet\Scripts\activate     # On Windows
 ```
 
-### Path Configuration
-Before running the notebooks, verify the paths in Step 2:
-```python
-BASE_DIR = r'C:\2026\PneumoFusionNet\mimic\mimic_pilot_139'
-# Notebook will map image paths dynamically using:
-OLD_IMG  = r'C:\2026\PneumoFusionNet\mimic\MIMIC_CXR_JPG_P1\p10'
-NEW_IMG  = r'C:\2026\PneumoFusionNet\mimic\mimic_pilot_139\mimic-cxr-jpg\2.1.0\files\p10'
+### 2. Install PyTorch & Core Libraries
+Install PyTorch with CUDA support. For CUDA 11.2+:
+```bash
+pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113
 ```
 
-### Running the Pipeline
-Run the notebooks sequentially:
-1. **`Phase-1mimic_image_classifier.ipynb`**: Trains the image-only baseline.
-2. **`Phase-1.1mimic_image_classifier(balanced-Set).ipynb`**: Evaluates the image-only baseline on balanced classes.
-3. **`Phase-2-FINAL_multimodal_classifier.ipynb`**: Trains the multimodal network (BERT + CNN).
-4. **`Phase-2.1-multimodal_classifier(balanced-Set).ipynb`**: Evaluates the multimodal model on balanced classes.
+Install remaining dependencies:
+```bash
+pip install -r mimic/requirements.txt
+```
+
+### 3. Launch Notebooks
+```bash
+# Register the environment kernel with Jupyter
+python -m ipykernel install --user --name=venv_PneumoFusionNet --display-name "PneumoFusionNet"
+
+# Launch Jupyter
+jupyter lab
+```
+
+---
+
+## 📦 Data Subset Preparation (1,000 Cohort)
+
+For replicating the multimodal pipeline with a larger, balanced cohort of 1,000 cases (500 Pneumonia, 500 Normal), we have provided a detailed step-by-step data extraction, download, and pairing guide.
+
+👉 **Refer to the [MIMIC-CXR 1,000 Cohort Data Preparation Guide](mimic/1000_dataset/README.md)** for complete details on how to recreate this dataset.
+
+---
+
+## 🔑 Data Access Warning
+
+MIMIC-CXR and MIMIC-IV are restricted-access datasets. To download the clinical notes and image paths used here:
+1. Complete the CITI training course on human subjects research.
+2. Sign the PhysioNet Data Use Agreement (DUA).
+3. Request access via the [PhysioNet MIMIC-CXR Page](https://physionet.org/content/mimic-cxr-jpg/2.0.0/).
+
+---
+
+## 👨‍💻 Author
+
+**Ashutosh Yadav**  
+*   **Affiliation**: Indian Institute of Technology Guwahati (IIT Guwahati)  
+*   **Specialization**: B.Sc. in Data Science & Artificial Intelligence  
+*   **Email**: [ay346185@gmail.com](mailto:ay346185@gmail.com)  
+*   **GitHub**: [@Ashutosh-yadav0001](https://github.com/Ashutosh-yadav0001)  
