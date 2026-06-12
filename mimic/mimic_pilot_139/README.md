@@ -94,9 +94,9 @@ PneumoFusionNet/
 │   │   ├── reports/txt/                         # Raw text radiology reports (.txt)
 │   │   │
 │   │   ├── Notebooks/
-│   │   │   ├── Phase-1mimic_image_classifier.ipynb                 # Phase 1: Image only (Imbalanced baseline)
-│   │   │   ├── Phase-1.1mimic_image_classifier(balanced-Set).ipynb  # Phase 1.1: Image only (Balanced cohort)
-│   │   │   ├── Phase-2-FINAL_multimodal_classifier.ipynb            # Phase 2: Multimodal (Imbalanced)
+│   │   │   ├── Phase-1-image_classifier.ipynb                 # Phase 1: Image only (Imbalanced baseline)
+│   │   │   ├── Phase-1.1-image_classifier(balanced-Set).ipynb  # Phase 1.1: Image only (Balanced cohort)
+│   │   │   ├── Phase-2-multimodal_classifier.ipynb            # Phase 2: Multimodal (Imbalanced)
 │   │   │   └── Phase-2.1-multimodal_classifier(balanced-Set).ipynb  # Phase 2.1: Multimodal (Balanced)
 │   │   │
 │   │   ├── outputs/                              # Evaluation outputs & checkpoints
