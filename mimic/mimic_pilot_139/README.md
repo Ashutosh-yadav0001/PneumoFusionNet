@@ -6,8 +6,7 @@
 [![Dataset](https://img.shields.io/badge/PhysioNet-MIMIC--CXR--JPG-lightgrey)](https://physionet.org/content/mimic-cxr-jpg/2.0.0/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-> **Explainable Multimodal Deep Learning Framework for Pneumonia Detection from MIMIC-CXR Chest X-rays and Clinical Reports**  
-> Adapting the **PneumoFusionNet** architecture (originally proposed in *Frontiers in Physiology, 2025*) to the MIMIC-CXR medical imaging dataset.
+> **PneumoFusionNet-MIMIC is a multimodal deep learning framework for explainable pneumonia classification. Aligned with the 2025 Frontiers in Physiology study, the pipeline integrates a modified ResNet50 visual backbone—enhanced with Global Channel-Spatial Attention (GCSA) and Depthwise Separable Convolutions (DSC)—with a Bio_ClinicalBERT text encoder to achieve joint classification from chest X-rays and raw clinical reports.**
 
 ---
 
