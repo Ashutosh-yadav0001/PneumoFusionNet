@@ -8,7 +8,9 @@
 MIMIC_CXR_JPG_P1/
 mimiciv/
 dataset_139/
-1000_dataset/
+1000_dataset/*
+!1000_dataset/notebooks_scaleUp/
+1000_dataset/notebooks_scaleUp/.ipynb_checkpoints/
 reports/
 
 # -------------------------------------------------------------
