@@ -109,3 +109,8 @@ ehthumbs.db
 # roc_curve.png
 # train_loss.png
 # are intentionally tracked.
+
+!1000_dataset/outputs/
+!1000_dataset/outputs/**
+!1000_dataset/outputs/**/*.pth
+!1000_dataset/outputs/**/*.pt

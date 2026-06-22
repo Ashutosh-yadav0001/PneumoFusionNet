@@ -42,3 +42,9 @@ verify.py
 # Docs & Reports (Keep assignment submissions strictly local)
 docs/
 
+# Allow mimic 1000_dataset outputs folder and contents
+!mimic/1000_dataset/outputs/
+!mimic/1000_dataset/outputs/**
+!mimic/1000_dataset/outputs/**/*.pth
+!mimic/1000_dataset/outputs/**/*.pt
+

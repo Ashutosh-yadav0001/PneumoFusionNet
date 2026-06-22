@@ -1,0 +1,8 @@
+{
+  "optimal_threshold": 0.5896758437156677,
+  "test_auc": 0.8119774011299437,
+  "test_f1_tuned": 0.7061899139821217,
+  "test_acc_tuned": 0.7089552238805971,
+  "best_epoch": 14,
+  "model_path": "C:\\2026\\PneumoFusionNet\\mimic\\1000_dataset\\outputs\\Phase_1.1v3_PA_fixed\\best_v3_model.pth"
+}
