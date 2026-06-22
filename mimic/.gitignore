@@ -43,7 +43,6 @@ urls*
 *.h5
 *.keras
 *.pkl
-*.csv
 
 # -------------------------------------------------------------
 # Python Virtual Environments
@@ -115,4 +114,5 @@ ehthumbs.db
 !1000_dataset/outputs/**
 !1000_dataset/outputs/**/*.pth
 !1000_dataset/outputs/**/*.pt
-!1000_dataset/outputs/**/*.csv
+
+*.csv

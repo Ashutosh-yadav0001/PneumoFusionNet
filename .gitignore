@@ -12,7 +12,6 @@ datasets/
 *.pt
 *.h5
 *.ckpt
-*.csv
 
 # Python
 __pycache__/
@@ -48,5 +47,7 @@ docs/
 !mimic/1000_dataset/outputs/**
 !mimic/1000_dataset/outputs/**/*.pth
 !mimic/1000_dataset/outputs/**/*.pt
-!mimic/1000_dataset/outputs/**/*.csv
+
+*.csv
+
 

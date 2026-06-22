@@ -1,7 +1,0 @@
-subject_id,study_id,label,label_name,split
-10007928,59796203,1,Pneumonia,val
-10000032,50414267,0,Normal,val
-10003637,51461467,0,Normal,val
-10003019,58505074,1,Pneumonia,val
-10011365,59571128,1,Pneumonia,val
-10007326,59442660,0,Normal,val
