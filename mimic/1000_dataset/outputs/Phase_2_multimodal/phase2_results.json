@@ -1,0 +1,11 @@
+{
+  "phase1_fold2_tta_auc": 0.8445029239766082,
+  "phase1_fold2_tuned_acc": 0.7762803234501348,
+  "phase2_test_auc": 0.9108812949640287,
+  "phase2_tuned_acc": 0.8528428093645485,
+  "phase2_tuned_f1": 0.835820895522388,
+  "phase2_sensitivity": 0.8057553956834532,
+  "phase2_specificity": 0.89375,
+  "threshold": 0.5573075413703918,
+  "test_n": 299
+}

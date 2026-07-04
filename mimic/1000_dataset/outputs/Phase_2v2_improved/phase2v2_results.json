@@ -1,0 +1,24 @@
+{
+  "test_auc": 0.949,
+  "default_acc": 0.8829,
+  "default_sensitivity": 0.9065,
+  "default_specificity": 0.8625,
+  "youden_acc": 0.8863,
+  "youden_sensitivity": 0.9137,
+  "youden_specificity": 0.8625,
+  "youden_threshold": 0.4989,
+  "clinical_acc": 0.8863,
+  "clinical_sensitivity": 0.9137,
+  "clinical_specificity": 0.8625,
+  "clinical_threshold": 0.4989,
+  "test_n": 299,
+  "improvements": [
+    "FINDINGS+HISTORY text extraction",
+    "Unfreeze last 2 BERT layers (lr=1e-5)",
+    "Cross-Attention Fusion (MultiheadAttention)",
+    "Focal Loss (gamma=2.0)",
+    "Mixup on embeddings (alpha=0.2)",
+    "Clinical threshold (target sensitivity>=90%)",
+    "Grad-CAM explainability"
+  ]
+}

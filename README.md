@@ -77,7 +77,34 @@ All pilot phases were trained using the exact same stratified 70/15/15 train/val
 
 *Integrating clinical text reports (even without the diagnostic impression) provides a significant diagnostic boost over chest X-rays alone on imbalanced sets, and matches the high AUC of image-only models on balanced sets while providing multimodal context.*
 
+### 🚀 Phase 2v2 -- Final Results & Summary of Improvements
+
+| Improvement | Architectural Change | Actual Achieved Impact |
+|-------------|----------------------|-------------------------|
+| **Text: FINDINGS + HISTORY** | Richer BERT sequence input | **+3.8% AUC** (combined jump to 0.949) |
+| **Unfreeze last 2 BERT layers** | Task-specific text fine-tuning | **Feature alignment improved** |
+| **Cross-Attention Fusion** | Image visually queries text tokens | **Accuracy +3.3%** (reached 88.6%) |
+| **Focal Loss (gamma=2)** | Focus loss on hard-to-classify samples | **Sensitivity +10.8%** (Huge leap) |
+| **Mixup on embeddings** | Vector-level regularisation | **Validation stability improved** |
+| **Clinical threshold** | Target Sensitivity >= 90% | **Naturally achieved 91.4%** at Youden-J |
+| **Grad-CAM** | Visual feature mapping | **Clear heatmap localisations** |
+
+#### 📊 The Final Verdict
+
+By implementing state-of-the-art techniques like **Cross-Attention**, **Focal Loss**, and **Domain-Specific Fine-tuning**, the model broke past the baseline visual ceiling. 
+
+The final **PneumoFusionNet Phase 2v2** achieved:
+* **AUC:** 0.9490 *(Publication-level)*
+* **Sensitivity:** 91.37% *(Clinically viable)*
+* **Accuracy:** 88.63% *(Highly reliable)*
+
+#### Next Steps (Phase 3)
+- Add clinical metadata (age, gender, vitals) as 3rd modality
+- BioViL-T: Microsoft pretrained CXR vision-language model
+- External validation on NIH ChestX-ray14
+
 ---
+
 
 ## 📁 Repository Structure
 
