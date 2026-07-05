@@ -1,0 +1,15 @@
+{
+  "backbone": "densenet121-res224-mimic_nb",
+  "img_size": 320,
+  "tta_auc": 0.8114,
+  "youden_acc": 0.7559,
+  "youden_sensitivity": 0.6043,
+  "youden_specificity": 0.8875,
+  "youden_threshold": 0.5894,
+  "clinical_acc": 0.4649,
+  "clinical_sensitivity": 1.0,
+  "clinical_specificity": 0.0,
+  "clinical_threshold": 0.0966,
+  "test_n": 299,
+  "bbox_coverage": "2343/1989"
+}
