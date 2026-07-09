@@ -15,12 +15,12 @@
 PneumoFusionNet is a state-of-the-art multimodal deep learning framework designed to diagnose binary pneumonia by fusing information from multiple clinical modalities. This repository implements a pipeline using the **MIMIC-CXR JPG** dataset (P10 subset) across multiple research phases:
 
 ```
-Phase 1: Image Only ──► Phase 2: Multimodal (Image + Text) ──► Phase 3: Multimodal + Lab Data (Upcoming)
+Phase 1: Image Only ──► Phase 2: Multimodal (Image + Text) ──► Phase 3: Triple Fusion (Image + Text + Clinical Metadata)
 ```
 
 1. **Phase 1 (Chest X-ray Image Classifier)**: Extracting visual embeddings using a custom CNN backbone enhanced with spatial attention.
 2. **Phase 2 (Multimodal Fusion)**: Fusing visual embeddings with ClinicalBERT representations parsed from raw radiology text reports.
-3. **Phase 3 (Lab Data Integration)**: Extending the fusion network to incorporate tabular laboratory measurements (WBC, CRP, etc.) from MIMIC-IV.
+3. **Phase 3 (Triple Fusion)**: Extending the fusion network to incorporate tabular demographics, vitals, and laboratory measurements (16 clinical features) parsed from MIMIC-IV alongside reports and images.
 
 ---
 
@@ -39,9 +39,15 @@ graph TD
         Report[Radiology Report Text] --> Clean[Exclude IMPRESSION Section]
         Clean --> BERT[Bio_ClinicalBERT Encoder]
         BERT --> TextEmb[768-d Text Embedding]
-        ImgEmb & TextEmb --> Concat[Concatenation: 1792-d]
-        Concat --> MLP[Fusion MLP Classifier]
-        MLP --> Out[Binary Pneumonia Classifier]
+        ImgEmb & TextEmb --> CrossAttention[Cross-Attention Fusion]
+    end
+
+    subgraph Phase 3: Triple Fusion
+        Metadata[16 Tabular Features] --> MetaMLP[Metadata MLP Encoder]
+        MetaMLP --> MetaEmb[64-d Metadata Embedding]
+        CrossAttention & MetaEmb --> Concat[Concatenation]
+        Concat --> FinalMLP[Triple Fusion MLP Classifier]
+        FinalMLP --> Out[Binary Pneumonia Classifier]
     end
 ```
 
@@ -51,6 +57,7 @@ graph TD
 *   **Depthwise Separable Convolution (DSC)**: Dramatically reduces feature dimensions from 2048 to 1024 with minimal parameter overhead.
 *   **Global Context Spatial Attention (GCSA)**: Focuses the feature extractor on key pathological areas of the chest X-rays.
 *   **Bio_ClinicalBERT**: A BERT transformer model pre-trained on clinical notes from MIMIC-III, capturing medical text semantics.
+*   **Metadata MLP Encoder**: A multilayer perceptron that transforms 16 clinical metadata features (demographics, vitals, and lab results) into a dense 64-d embedding.
 
 ---
 

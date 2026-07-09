@@ -15,6 +15,13 @@
 | 3 | `Phase-1.1v2-enhanced_image_classifier_PA.ipynb` | PA | Enhanced: lung-ROI crop (torchxrayvision), CLAHE, deeper fine-tuning |
 | 4 | `Phase-1.1v3-fixed_image_classifier_PA.ipynb` | PA | Mixup (α=0.3), label smoothing, cosine LR, class-weighted loss, threshold tuning |
 | 5 | `Phase-1.1v4-crossval_tta_PA.ipynb` | PA | 5-fold stratified CV + 10-view TTA + per-fold threshold tuning |
+| 6 | `Phase-1.1v4-single_split_tta_PA.ipynb` | PA | Single split version of v4 for fast validation and extraction |
+| 7 | `Phase-1.1v5-advanced_image_classifier_PA.ipynb` | PA | Advanced image classification with unfreezing schedule |
+| 8 | `Phase-1.1v6-improved_PA.ipynb` | PA | Improved image classifier with final hyperparameters and results |
+| 9 | `Phase-1.2-image_classifier_balanced_scaleUp(PA View 1000+).ipynb` | PA | Scaled up image classifier to 1000+ samples |
+| 10 | `Phase-2/Phase-2-multimodal_fusion_PA.ipynb` | PA | Phase 2 Multimodal baseline: Image + Text Concatenation |
+| 11 | `Phase-2/Phase-2v2-multimodal_improved_PA.ipynb` | PA | Phase 2v2 Multimodal improved: Cross-Attention, Focal Loss, BERT unfreezing |
+| 12 | `Phase-3/Phase-3-triple_fusion_PA.ipynb` | PA | Phase 3 Triple Fusion: Image + Text + Clinical Metadata (16 tabular features) |
 
 ---
 
