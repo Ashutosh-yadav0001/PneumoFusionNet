@@ -1,0 +1,19 @@
+Phase 1.1 — Pilot Architecture Scale-Up Results
+Architecture : ResNet50 + DSC + GCSA
+Dataset      : 1,989 PA-only images (patient-level split)
+Date         : 2026-07-10 21:20
+=======================================================
+AUC-ROC      : 0.7126
+Accuracy     : 66.21%
+Sensitivity  : 69.92%
+Specificity  : 63.53%
+F1 (macro)   : 0.6602
+Youden thr.  : 0.4879
+Tuned Acc    : 66.55%
+Tuned Sens   : 72.36%
+Tuned Spec   : 62.35%
+=======================================================
+
+Confusion Matrix:
+  TN=108  FP=62
+  FN=37  TP=86

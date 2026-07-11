@@ -79,6 +79,7 @@ All pilot phases were trained using the exact same stratified 70/15/15 train/val
 | :--- | :--- | :--- | :---: | :---: | :---: |
 | **Phase 1** | Image Only | Imbalanced (118:21) | 0.6667 | 0.7619 | 0.4300 |
 | **Phase 1.1** | Image Only | **Balanced (21:21)** | **0.9167** | **0.8571** | **0.8571** |
+| **Phase 1.1 Scale-Up** | Image Only | **Pilot Arch (1,989 images)** | **0.7126** | **66.21%** | **0.6602** |
 | **Phase 2** | Image + Text | Imbalanced (118:21) | 0.7037 | 0.8095 | 0.4474 |
 | **Phase 2.1** | Image + Text | **Balanced (21:21)** | **0.9167** | **0.7143** | **0.7083** |
 

@@ -19,9 +19,10 @@
 | 7 | `Phase-1.1v5-advanced_image_classifier_PA.ipynb` | PA | Advanced image classification with unfreezing schedule |
 | 8 | `Phase-1.1v6-improved_PA.ipynb` | PA | Improved image classifier with final hyperparameters and results |
 | 9 | `Phase-1.2-image_classifier_balanced_scaleUp(PA View 1000+).ipynb` | PA | Scaled up image classifier to 1000+ samples |
-| 10 | `Phase-2/Phase-2-multimodal_fusion_PA.ipynb` | PA | Phase 2 Multimodal baseline: Image + Text Concatenation |
-| 11 | `Phase-2/Phase-2v2-multimodal_improved_PA.ipynb` | PA | Phase 2v2 Multimodal improved: Cross-Attention, Focal Loss, BERT unfreezing |
-| 12 | `Phase-3/Phase-3-triple_fusion_PA.ipynb` | PA | Phase 3 Triple Fusion: Image + Text + Clinical Metadata (16 tabular features) |
+| 10 | `Phase-1.1-pilot_arch_scaleUp_ResNet_DSC_GCSA.ipynb` | PA | Pilot Architecture: ResNet50 + DSC + GCSA scaled up to 1,989 PA-only images |
+| 11 | `Phase-2/Phase-2-multimodal_fusion_PA.ipynb` | PA | Phase 2 Multimodal baseline: Image + Text Concatenation |
+| 12 | `Phase-2/Phase-2v2-multimodal_improved_PA.ipynb` | PA | Phase 2v2 Multimodal improved: Cross-Attention, Focal Loss, BERT unfreezing |
+| 13 | `Phase-3/Phase-3-triple_fusion_PA.ipynb` | PA | Phase 3 Triple Fusion: Image + Text + Clinical Metadata (16 tabular features) |
 
 ---
 
