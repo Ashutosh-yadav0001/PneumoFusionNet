@@ -1,0 +1,79 @@
+{
+  "model": "Image + Clinical Metadata Fusion (No Text)",
+  "description": "Phase 1 DenseNet+CBAM (frozen) + Clinical MLP. No radiology text used.",
+  "architecture": {
+    "image_encoder": "DenseNet121+CBAM (frozen, Phase 1.1v4 Fold 2) \u2192 1024-d",
+    "meta_encoder": "MLP+LayerNorm(16\u2192128\u2192128\u219264)",
+    "fusion": "Concat [img(1024) + meta(64)] = 1088-d \u2192 MLP classifier",
+    "clinical_feats": [
+      "age",
+      "gender_M",
+      "is_deceased",
+      "heart_rate",
+      "respiratory_rate",
+      "spo2",
+      "systolic_bp",
+      "diastolic_bp",
+      "temperature_f",
+      "wbc",
+      "hemoglobin",
+      "hematocrit",
+      "creatinine",
+      "crp",
+      "alk_phos",
+      "albumin"
+    ]
+  },
+  "training": {
+    "n_train": 1857,
+    "n_val": 398,
+    "n_test": 398,
+    "batch_size": 32,
+    "epochs_run": 50,
+    "lr_fusion": 0.0002,
+    "lr_meta": 0.001,
+    "focal_gamma": 2.0,
+    "mixup_alpha": 0.2
+  },
+  "results": {
+    "test_auc": 0.8467,
+    "best_val_auc": 0.8605,
+    "default_acc": 0.7814,
+    "default_sensitivity": 0.7416,
+    "default_specificity": 0.8136,
+    "youden_threshold": 0.5603,
+    "youden_acc": 0.8015,
+    "youden_sensitivity": 0.6573,
+    "youden_specificity": 0.9182,
+    "clinical_threshold": 0.4049,
+    "clinical_sensitivity": 0.9045,
+    "clinical_specificity": 0.5,
+    "n_test": 398
+  },
+  "feature_importances": {
+    "age": 0.0113,
+    "gender_M": 0.0053,
+    "is_deceased": -0.005,
+    "heart_rate": 0.0023,
+    "respiratory_rate": 0.0053,
+    "spo2": -0.0008,
+    "systolic_bp": 0.0131,
+    "diastolic_bp": -0.0122,
+    "temperature_f": -0.0006,
+    "wbc": 0.013,
+    "hemoglobin": 0.0058,
+    "hematocrit": 0.0017,
+    "creatinine": -0.0043,
+    "crp": 0.0176,
+    "alk_phos": 0.0123,
+    "albumin": 0.0183
+  },
+  "modality_comparison": {
+    "phase1_image_only": 0.82,
+    "phase3b_image_clinical": 0.8467,
+    "phase2v2_image_text": 0.949,
+    "phase3_image_text_clinical": 0.984,
+    "clinical_value_over_image": 0.0267,
+    "text_value_over_clinical": 0.1373
+  }
+}
