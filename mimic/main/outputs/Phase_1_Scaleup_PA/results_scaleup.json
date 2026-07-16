@@ -1,0 +1,16 @@
+{
+  "dataset_size": 3763,
+  "train_size": 2624,
+  "val_size": 557,
+  "test_size": 582,
+  "auc": 0.8009147098100855,
+  "accuracy": 0.6374570446735395,
+  "f1": 0.7197875166002655,
+  "sensitivity": 0.9063545150501672,
+  "specificity": 0.35335689045936397,
+  "threshold": 0.3029167056083679,
+  "tta_views": 10,
+  "best_val_auc": 0.8025966323715221,
+  "backbone": "densenet121-res224-mimic_nb",
+  "img_size": 320
+}

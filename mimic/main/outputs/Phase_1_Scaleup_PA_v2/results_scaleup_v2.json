@@ -1,0 +1,27 @@
+{
+  "model": "Phase 1 Scaleup v2 (All Fixes)",
+  "fixes_applied": [
+    "No horizontal flip (anatomical laterality)",
+    "Stratified split by per-subject label",
+    "best_state saved in checkpoint (resume bug fix)",
+    "Rotation reduced 10->5 degrees",
+    "AMP mixed precision enabled",
+    "Bbox merging (top-2 contours)"
+  ],
+  "dataset_size": 3763,
+  "train_size": 2642,
+  "val_size": 566,
+  "test_size": 555,
+  "auc": 0.7899903903591928,
+  "accuracy": 0.6432432432432432,
+  "f1": 0.7163323782234956,
+  "sensitivity": 0.9025270758122743,
+  "specificity": 0.38489208633093525,
+  "clinical_threshold": 0.2879210114479065,
+  "youden_threshold": 0.6689071655273438,
+  "tta_views": 10,
+  "best_val_auc": 0.8322838580709646,
+  "backbone": "densenet121-res224-mimic_nb",
+  "img_size": 320,
+  "amp_enabled": true
+}
