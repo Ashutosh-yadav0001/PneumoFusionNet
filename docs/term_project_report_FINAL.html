@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PneumoFusionNet — Term Project Report | IIT Guwahati</title>
+<style>
+  /* ─── Base ──────────────────────────────────────────────────────────────── */
+  @import url('https://fonts.googleapis.com/css2?family=Linux+Libertine:ital,wght@0,400;0,600;0,700;1,400&family=Linux+Biolinum:wght@400;700&display=swap');
+
+  :root {
+    --navy:  #1a2744;
+    --cyan:  #0077b6;
+    --lgray: #f5f7fa;
+    --mgray: #dde3ed;
+    --dgray: #4a5568;
+    --red:   #c0392b;
+    --grn:   #2e7d32;
+    --org:   #d35400;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 10pt;
+    line-height: 1.45;
+    color: #111;
+    background: white;
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 18mm 18mm 18mm 18mm;
+  }
+
+  /* ─── Header Banner ─────────────────────────────────────────────────────── */
+  .iitg-banner {
+    background: var(--navy);
+    color: white;
+    text-align: center;
+    padding: 5px 10px;
+    font-size: 8.5pt;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ─── Title Block ───────────────────────────────────────────────────────── */
+  .title-block { text-align: center; margin-bottom: 10px; }
+
+  .paper-title {
+    font-size: 16pt;
+    font-weight: bold;
+    color: var(--navy);
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+
+  .paper-hr { border: none; border-top: 2.5px solid var(--cyan); margin: 7px 0; }
+  .paper-hr-thin { border: none; border-top: 0.8px solid var(--mgray); margin: 7px 0; }
+
+  .author-name {
+    font-size: 12pt;
+    font-weight: bold;
+    color: var(--navy);
+    margin-top: 4px;
+  }
+
+  .affiliation {
+    font-size: 9pt;
+    color: var(--dgray);
+    margin-top: 2px;
+  }
+
+  .email { font-size: 9pt; font-style: italic; color: var(--dgray); }
+
+  /* ─── Two-column layout ─────────────────────────────────────────────────── */
+  .two-col {
+    column-count: 2;
+    column-gap: 6mm;
+    text-align: justify;
+  }
+
+  /* ─── Section headings ──────────────────────────────────────────────────── */
+  .section-title {
+    font-size: 10.5pt;
+    font-weight: bold;
+    color: var(--navy);
+    text-transform: uppercase;
+    border-bottom: 1.5px solid var(--cyan);
+    padding-bottom: 2px;
+    margin-top: 12px;
+    margin-bottom: 5px;
+    break-after: avoid;
+  }
+
+  .subsection-title {
+    font-size: 9.5pt;
+    font-weight: bold;
+    color: var(--cyan);
+    margin-top: 8px;
+    margin-bottom: 3px;
+    break-after: avoid;
+  }
+
+  /* ─── Paragraph ─────────────────────────────────────────────────────────── */
+  p { margin-bottom: 5px; hyphens: auto; }
+
+  /* ─── Abstract / Keywords Box ───────────────────────────────────────────── */
+  .abstract-box {
+    background: #eef5ff;
+    border-left: 4px solid var(--cyan);
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 9pt;
+  }
+  .abstract-box .label {
+    font-weight: bold; color: var(--navy); font-size: 9.5pt;
+  }
+
+  .keyword-box {
+    background: var(--lgray);
+    border-left: 3px solid #aab;
+    padding: 5px 10px;
+    font-size: 8.5pt;
+    font-style: italic;
+    margin-bottom: 10px;
+    color: var(--dgray);
+  }
+
+  /* ─── Coloured Info Boxes ───────────────────────────────────────────────── */
+  .box {
+    border-radius: 3px;
+    padding: 7px 10px;
+    margin: 6px 0;
+    font-size: 9pt;
+    break-inside: avoid;
+  }
+
+  .box-red    { background: #fff0f0; border: 1.5px solid var(--red); }
+  .box-blue   { background: #f0f6ff; border: 1.5px solid var(--cyan); }
+  .box-orange { background: #fff8f0; border: 1.5px solid var(--org); }
+  .box-green  { background: #f0fff4; border: 1.5px solid var(--grn); }
+
+  .box-title {
+    font-weight: bold;
+    font-size: 9pt;
+    margin-bottom: 4px;
+  }
+  .box-red    .box-title { color: var(--red); }
+  .box-blue   .box-title { color: var(--cyan); }
+  .box-orange .box-title { color: var(--org); }
+  .box-green  .box-title { color: var(--grn); }
+
+  /* ─── Tables ────────────────────────────────────────────────────────────── */
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin: 5px 0;
+    break-inside: avoid;
+  }
+
+  table.data-table th {
+    background: var(--navy);
+    color: white;
+    padding: 4px 5px;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  table.data-table td {
+    padding: 3px 5px;
+    border-bottom: 0.5px solid var(--mgray);
+    vertical-align: middle;
+  }
+
+  table.data-table tr:nth-child(even) td { background: var(--lgray); }
+  table.data-table tr:last-child td { border-bottom: 1px solid #999; }
+
+  .table-caption {
+    font-size: 8pt;
+    font-style: italic;
+    color: var(--dgray);
+    text-align: center;
+    margin-top: 2px;
+    margin-bottom: 6px;
+  }
+
+  /* ─── Equations ─────────────────────────────────────────────────────────── */
+  .eq {
+    text-align: center;
+    font-style: italic;
+    margin: 4px 0;
+    font-size: 9.5pt;
+    color: #222;
+  }
+
+  /* ─── Pipeline Diagram ──────────────────────────────────────────────────── */
+  .pipeline {
+    display: flex;
+    gap: 10px;
+    margin: 8px 0;
+    font-size: 8pt;
+    break-inside: avoid;
+  }
+
+  .pipeline-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .pipe-label {
+    font-weight: bold;
+    color: var(--cyan);
+    font-size: 8.5pt;
+    margin-bottom: 3px;
+  }
+
+  .pipe-node {
+    background: #dbeafe;
+    border: 1px solid var(--cyan);
+    border-radius: 4px;
+    padding: 3px 6px;
+    text-align: center;
+    width: 100%;
+    font-size: 8pt;
+    color: var(--navy);
+  }
+
+  .pipe-node.text { background: #ccfbf1; border-color: #0d9488; color: #0d9488; }
+  .pipe-node.fuse { background: var(--navy); color: white; font-weight: bold; }
+  .pipe-node.strip { background: #fee2e2; border-color: var(--red); color: var(--red); }
+  .pipe-node.result { background: #d1fae5; border-color: var(--grn); color: var(--grn); font-weight: bold; }
+
+  .pipe-arrow { font-size: 14pt; color: #999; text-align: center; line-height: 1; }
+
+  .pipeline-merge {
+    text-align: center;
+    margin: 4px 0;
+  }
+
+  /* ─── Lists ─────────────────────────────────────────────────────────────── */
+  ul, ol { padding-left: 16px; margin-bottom: 5px; }
+  li { margin-bottom: 2px; font-size: 9pt; }
+
+  /* ─── Code inline ───────────────────────────────────────────────────────── */
+  code {
+    font-family: 'Courier New', monospace;
+    font-size: 8pt;
+    background: #f4f4f4;
+    padding: 1px 3px;
+    border-radius: 2px;
+  }
+
+  /* ─── References ────────────────────────────────────────────────────────── */
+  .references {
+    font-size: 8.5pt;
+    margin-top: 10px;
+    break-inside: avoid;
+  }
+
+  .ref-item {
+    margin-bottom: 4px;
+    text-indent: -18px;
+    padding-left: 18px;
+  }
+
+  /* ─── Print ─────────────────────────────────────────────────────────────── */
+  @media print {
+    body { padding: 12mm 14mm; }
+    .section-title { break-before: auto; }
+    a { text-decoration: none; color: inherit; }
+  }
+
+  /* ─── Utility ───────────────────────────────────────────────────────────── */
+  .red    { color: var(--red); }
+  .grn    { color: var(--grn); }
+  .cyan   { color: var(--cyan); }
+  .navy   { color: var(--navy); }
+  .bold   { font-weight: bold; }
+  .italic { font-style: italic; }
+  .small  { font-size: 8pt; }
+  .fail   { color: var(--red); font-weight: bold; }
+  .pass   { color: var(--grn); font-weight: bold; }
+</style>
+</head>
+<body>
+
+<!-- IITG Header Banner -->
+<div class="iitg-banner">
+  Indian Institute of Technology Guwahati &nbsp;|&nbsp; Term Project Report (Trimester 8) &nbsp;|&nbsp; B.Sc. (Hons.) Data Science and Artificial Intelligence
+</div>
+
+<!-- Title Block -->
+<div class="title-block">
+  <div class="paper-title">
+    PneumoFusionNet: A Multimodal Deep Learning Framework<br>
+    for Pneumonia Detection Using Chest X-Rays and Clinical Reports
+  </div>
+  <hr class="paper-hr">
+  <div class="author-name">Ashutosh Yadav &nbsp; (Roll Number: 23035010693)</div>
+  <div class="affiliation">B.Sc. (Honours) Data Science and Artificial Intelligence &nbsp;|&nbsp; Indian Institute of Technology Guwahati, India</div>
+  <div class="email">ashutosh@op.iitg.ac.in</div>
+  <hr class="paper-hr-thin">
+</div>
+
+<!-- Abstract -->
+<div class="abstract-box">
+  <span class="label">Abstract —</span>
+  This report presents <strong>PneumoFusionNet</strong>, a multimodal deep learning framework for precise pneumonia diagnosis,
+  inspired by the PneumoFusion-Net paper of Yu et al. (2025) [2] and built on the restricted <strong>MIMIC-CXR</strong>
+  hospital dataset. The research progressed through four stages:
+  <strong>(1) Architecture validation</strong> on public datasets — Kaggle Chest X-Ray (92% accuracy) and the Indiana University (IU) dataset (multimodal pipeline prototype);
+  <strong>(2) Dataset search and access</strong> — After evaluating multiple public datasets, MIMIC-CXR was selected as the only dataset with paired X-ray images, clinical history, and radiological reports; access required CITI training and a PhysioNet Data Use Agreement (DUA);
+  <strong>(3) Pilot study</strong> — A 139-sample pilot with ResNet50 + DSC + GCSA showed promising results, with leakage-free text fusion yielding <strong>+3.7% AUC</strong> over the image-only model;
+  <strong>(4) Scale-up failure</strong> — Scaling to 1,989 PA-only images, the identical pilot architecture <strong class="fail">failed completely</strong> (AUC = 0.713, Accuracy = 66.2%), proving ImageNet-pretrained models are insufficient for clinical-scale CXR classification.
+  The conclusion motivates a complete pivot to <strong>DenseNet-121</strong> with domain-specific X-ray pretraining for the final stage.
+</div>
+
+<div class="keyword-box">
+  <strong>Index Terms —</strong> Multimodal Deep Learning, MIMIC-CXR, Bio_ClinicalBERT, ResNet50, Depthwise Separable Convolution, Global Context Spatial Attention, Label Leakage, Pneumonia Detection.
+</div>
+
+<!-- ============================================================ Two-Column Body -->
+<div class="two-col">
+
+<!-- SECTION 1 -->
+<div class="section-title">1. Introduction</div>
+
+<p>
+Pneumonia is one of the leading causes of death worldwide, responsible for approximately 2.5 million deaths annually [1]. Chest radiography (CXR) is the primary diagnostic tool because it is fast, affordable, and universally available. However, reading a chest X-ray is highly challenging due to <strong>visual ambiguity</strong>: the same cloudy patch in a lung can look like pneumonia, fluid buildup (pleural effusion), or a collapsed lung section (atelectasis). Even experienced radiologists sometimes disagree.
+</p>
+
+<p>
+Image-only AI models ignore the clinical context that every doctor uses — symptoms, medical history, and test results. Adding radiology report text should help, but introduces a critical trap:
+</p>
+
+<div class="box box-red">
+  <div class="box-title">⚠ What is Label Leakage?</div>
+  Every radiology report ends with an <strong>IMPRESSION</strong> section containing the doctor's final written diagnosis.
+  If a model reads this during training, it simply memorises the answer instead of learning to diagnose. We strip this section completely:<br><br>
+  <span class="grn">✔ INDICATION: Patient with fever and cough. → Used for training</span><br>
+  <span class="grn">✔ FINDINGS: Consolidation in left lower lobe. → Used for training</span><br>
+  <span class="red">✘ IMPRESSION: Pneumonia confirmed. → REMOVED before training</span>
+</div>
+
+<p>
+This project builds PneumoFusionNet, inspired by the multimodal approach of Yu et al. [2], and tested on the restricted MIMIC-CXR clinical database [3]. Sections 2–6 cover: public dataset experiments, dataset search, anti-leakage methodology, pilot results, and the scale-up failure. Section 7 concludes.
+</p>
+
+<!-- SECTION 2 -->
+<div class="section-title">2. Stage 0: Architecture Validation on Public Datasets</div>
+
+<p>Before accessing restricted clinical data, we designed and validated a custom pilot architecture on publicly available datasets.</p>
+
+<div class="subsection-title">2.1 Pilot Architecture: ResNet50 + DSC + GCSA</div>
+
+<p><strong>ResNet50 Backbone [4].</strong> A ResNet50 pretrained on ImageNet serves as the feature extractor. The first convolutional layer is adapted for single-channel grayscale X-ray input by averaging the pretrained RGB weights. The first seven children are frozen during training.</p>
+
+<p><strong>Depthwise Separable Convolution (DSC).</strong> Compresses the 2048-channel ResNet50 output to 1024 channels with ~50% fewer parameters than a standard convolution:</p>
+<div class="eq">DSC(<i>X</i>) = BN(ReLU(<i>W</i><sub>1×1</sub> ∗ (<i>W<sub>dw</sub></i> ⊛ <i>X</i>)))</div>
+
+<p><strong>Global Context Spatial Attention (GCSA).</strong> Combines channel and spatial attention to focus the model on pathologically relevant lung regions:</p>
+<div class="eq"><i>A<sub>ch</sub></i> = σ(MLP(AvgPool(<i>X</i>)) + MLP(MaxPool(<i>X</i>)))</div>
+<div class="eq"><i>A<sub>sp</sub></i> = σ(Conv<sub>7×7</sub>([AvgCh(<i>X</i>); MaxCh(<i>X</i>)]))</div>
+<div class="eq"><i>X̂</i> = <i>X</i> · <i>A<sub>ch</sub></i> · <i>A<sub>sp</sub></i></div>
+
+<div class="subsection-title">2.2 Results on Public Datasets</div>
+
+<table class="data-table">
+  <thead><tr><th>Notebook</th><th>Dataset</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>v1_Basic_Image_Model</td><td>Kaggle CXR</td><td>~92% Acc ✓</td></tr>
+    <tr><td>v2_Enhanced_GCSA_DSC</td><td>Kaggle CXR</td><td>92% Acc, F1=0.91 ✓</td></tr>
+    <tr><td>v3-1-iu-multimodal-image</td><td>IU X-Ray</td><td>Pipeline test ✓</td></tr>
+    <tr><td>v3-2-iu-multimodal-text</td><td>IU X-Ray</td><td>Pipeline test ✓</td></tr>
+  </tbody>
+</table>
+<div class="table-caption">Table 1: Stage 0 experiments on public datasets.</div>
+
+<div class="box box-orange">
+  <div class="box-title">⚠ Important Caveat</div>
+  92% accuracy on Kaggle confirms the architecture <em>code is correct</em>. It says nothing about clinical readiness. Kaggle data is pre-cleaned, balanced, and far easier than real hospital data.
+</div>
+
+<!-- SECTION 3 -->
+<div class="section-title">3. Dataset Search and Securing MIMIC-CXR</div>
+
+<div class="subsection-title">3.1 The Dataset Problem</div>
+
+<p>After completing Stage 0, we identified a critical gap: no publicly available dataset simultaneously provides all three required modalities:</p>
+<ol>
+  <li>Chest X-ray images.</li>
+  <li>Clinical data (symptoms, medical history).</li>
+  <li>Unstructured radiological reports with distinct FINDINGS and IMPRESSION sections.</li>
+</ol>
+
+<p>Kaggle has only images. The Indiana University (IU) dataset has images and reports but lacks clinical depth and realistic imbalance. After evaluating NIH ChestX-ray14, CheXpert, and PadChest, we identified <strong>MIMIC-CXR-JPG (v2.0.0)</strong> as the ideal dataset [3].</p>
+
+<div class="subsection-title">3.2 Securing MIMIC-CXR Access</div>
+
+<div class="box box-blue">
+  <div class="box-title">🔒 Dataset Access — MIMIC-CXR-JPG (Restricted)</div>
+  MIMIC-CXR is <strong>not publicly downloadable</strong>. Gaining authorised access required:
+  <ul>
+    <li>Completing the <strong>CITI Program</strong> training on human subjects research ethics.</li>
+    <li>Signing a <strong>PhysioNet Data Use Agreement (DUA)</strong>.</li>
+    <li>Institutional verification and credentialing by PhysioNet.</li>
+  </ul>
+  All data was handled strictly per the DUA terms. No patient-identifiable information was stored or shared.
+</div>
+
+<table class="data-table">
+  <thead><tr><th>Dimension</th><th>Kaggle</th><th>MIMIC-CXR</th></tr></thead>
+  <tbody>
+    <tr><td>Access</td><td>Open</td><td>CITI + DUA</td></tr>
+    <tr><td>Balance</td><td>~50:50</td><td>5.6:1 (real)</td></tr>
+    <tr><td>Views</td><td>Single frontal</td><td>PA + AP + Lateral</td></tr>
+    <tr><td>Labels</td><td>Manual</td><td>CheXpert NLP</td></tr>
+    <tr><td>Text reports</td><td>None</td><td>Full reports</td></tr>
+    <tr><td>Data quality</td><td>Pre-cleaned</td><td>Real clinical</td></tr>
+  </tbody>
+</table>
+<div class="table-caption">Table 2: Kaggle vs. MIMIC-CXR dataset comparison.</div>
+
+<!-- SECTION 4 -->
+<div class="section-title">4. Methodology: Anti-Leakage Pipeline and System Design</div>
+
+<div class="subsection-title">4.1 Anti-Leakage Data Preparation</div>
+
+<p>We developed <code>rebuild_dataset_findings.py</code>, which processes each MIMIC-CXR radiology report and:</p>
+<ol>
+  <li>Parses the report into named sections (regex-based).</li>
+  <li><strong>Retains:</strong> INDICATION/HISTORY and FINDINGS (pre-diagnosis evidence).</li>
+  <li><strong>Strips:</strong> IMPRESSION and CONCLUSION (the written diagnosis).</li>
+  <li>Outputs filtered text to a cleaned CSV for training.</li>
+</ol>
+
+<p>Three CSV files manage the pipeline: <code>mimic_dataset.csv</code> (image-only), <code>mimic_multimodal_dataset.csv</code> (image + raw text), and <code>mimic_multimodal_dataset_v3.csv</code> (image + leakage-free text).</p>
+
+<div class="subsection-title">4.2 System Architecture</div>
+
+<!-- Pipeline Diagram -->
+<div class="pipeline">
+  <div class="pipeline-col">
+    <div class="pipe-label">Phase 1 — Image</div>
+    <div class="pipe-node">CXR Image (PA only)</div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-node">ResNet50 Backbone</div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-node">DSC: 2048 → 1024 ch.</div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-node">GCSA Attention</div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-node pass">1024-d Image Vector</div>
+  </div>
+  <div class="pipeline-col">
+    <div class="pipe-label">Phase 2 — Text</div>
+    <div class="pipe-node text">Report Text</div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-node strip">Remove IMPRESSION ✘</div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-node text">Bio_ClinicalBERT [6]</div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-node pass">768-d Text Vector</div>
+  </div>
+</div>
+<div style="text-align:center; font-size:9pt; margin:3px 0;">↓ Concatenate [1024 + 768 = 1792-d] ↓</div>
+<div class="pipe-node fuse" style="text-align:center; margin:3px 0; padding:5px;">Fusion MLP → <span class="result">Normal / Pneumonia</span></div>
+<div class="table-caption">Figure 1: PneumoFusionNet two-phase pipeline. IMPRESSION is stripped before text encoding.</div>
+
+<p><strong>Fusion Classifier.</strong> The 1024-d image vector and 768-d text vector are concatenated and fed to a two-layer MLP:</p>
+<div class="eq"><i>ŷ</i> = <i>W</i><sub>2</sub> · ReLU(<i>W</i><sub>1</sub> · [<i>v<sub>img</sub></i> ‖ <i>t<sub>text</sub></i>] + <i>b</i><sub>1</sub>) + <i>b</i><sub>2</sub></div>
+
+<!-- SECTION 5 -->
+<div class="section-title">5. Stage 1: MIMIC-CXR Pilot Study (139 Samples)</div>
+
+<div class="subsection-title">5.1 Pilot Dataset</div>
+
+<p>Due to the massive size of MIMIC-CXR, we started with a small pilot subset (extracted from the P10 directory) to verify our pipeline and anti-leakage filters: <strong>139 total samples</strong> (118 Normal, 21 Pneumonia; 5.6:1 class imbalance). All view types (PA, AP, Lateral) were included. Row-level stratified 70/15/15 split: 97 train / 21 val / 21 test.</p>
+
+<div class="subsection-title">5.2 Four-Phase Pilot Results</div>
+
+<table class="data-table">
+  <thead><tr><th>Phase</th><th>Configuration</th><th>AUC</th><th>Acc.</th><th>F1</th></tr></thead>
+  <tbody>
+    <tr><td>Phase 1</td><td>Image only, imbalanced (118:21)</td><td>0.667</td><td>76.2%</td><td>0.430</td></tr>
+    <tr><td>Phase 1.1</td><td>Image only, balanced (21:21)</td><td>0.917</td><td>85.7%</td><td>0.857</td></tr>
+    <tr><td>Phase 2</td><td>Image + Text, imbalanced (118:21)</td><td><strong>0.704</strong></td><td><strong>81.0%</strong></td><td>0.447</td></tr>
+    <tr><td>Phase 2.1</td><td>Image + Text, balanced (21:21)</td><td>0.917</td><td>71.4%</td><td>0.708</td></tr>
+    <tr style="background:#f0fff4;"><td colspan="2"><em>Leakage-free gain (Ph.2 vs Ph.1)</em></td><td class="grn">+0.037</td><td class="grn">+4.8%</td><td class="grn">+0.017</td></tr>
+  </tbody>
+</table>
+<div class="table-caption">Table 3: Pilot results. ResNet50 + DSC + GCSA backbone, seed=42.</div>
+
+<p>On the <strong>imbalanced (realistic) split</strong>, adding leakage-free clinical text improved AUC by +3.7% and accuracy by +4.8%. This gain is genuine — IMPRESSION was never shown to the model.</p>
+
+<div class="subsection-title">5.3 Statistical Honesty: The N=7 Problem</div>
+
+<p>The balanced pilot test set had exactly <strong>7 samples</strong>. One misclassification causes a <strong>14.28% accuracy swing</strong>. Computing 95% CIs using <em>CI = p ± 1.96√(p(1−p)/N)</em>:</p>
+<ul>
+  <li><strong>Phase 1.1 CI:</strong> 85.7% ± 25.9% → [59.8%, 100%]</li>
+  <li><strong>Phase 2.1 CI:</strong> 71.4% ± 33.5% → [38.0%, 100%]</li>
+</ul>
+<p>A Fisher's Exact Test yields <em>p ≈ 1.000</em>. The 14.3% difference is <strong>statistically insignificant</strong>. The AUC of 0.917 on N=7 samples is meaningless. We must scale up to get a reliable answer.</p>
+
+<!-- SECTION 6 -->
+<div class="section-title">6. Stage 2: Scale-Up Dataset and Architecture Failure</div>
+
+<div class="subsection-title">6.1 Scale-Up Data Preparation</div>
+
+<p>We curated a larger dataset of <strong>1,989 PA-only images</strong> from MIMIC-CXR (1,062 Normal + 927 Pneumonia) with two critical improvements over the pilot:</p>
+<ul>
+  <li><strong>PA-only filtering:</strong> Restricting to Posteroanterior views eliminates the view-type confound. AP views (patient supine) have different anatomical proportions that could confound the classifier.</li>
+  <li><strong>Patient-level splits:</strong> GroupShuffleSplit by <code>subject_id</code> guarantees zero patient overlap: <strong>1,401 train / 295 val / 293 test</strong>.</li>
+</ul>
+
+<div class="subsection-title">6.2 Testing the Pilot Architecture at Scale</div>
+
+<p>Notebook: <code>Phase-1.1-pilot_arch_scaleUp_ResNet_DSC_GCSA.ipynb</code></p>
+<p>We ran the <strong>identical</strong> ResNet50 + DSC + GCSA architecture on the 1,989 scale-up dataset:</p>
+
+<table class="data-table">
+  <thead><tr><th>Metric</th><th>Pilot (N=7, unreliable)</th><th>Scale-Up (N=293, real)</th></tr></thead>
+  <tbody>
+    <tr><td>AUC-ROC</td><td>0.917 <em class="small">(unreliable)</em></td><td class="fail">0.713 ❌</td></tr>
+    <tr><td>Accuracy</td><td>85.7% <em class="small">(unreliable)</em></td><td class="fail">66.2% ❌</td></tr>
+    <tr><td>Sensitivity</td><td>—</td><td class="fail">69.9% ❌</td></tr>
+    <tr><td>Specificity</td><td>—</td><td class="fail">63.5% ❌</td></tr>
+    <tr><td>F1 (macro)</td><td>0.857 <em class="small">(unreliable)</em></td><td class="fail">0.660 ❌</td></tr>
+    <tr><td colspan="3" class="small" style="padding-top:3px;"><em>Confusion matrix (N=293): TN=108, FP=62, FN=37, TP=86</em></td></tr>
+  </tbody>
+</table>
+<div class="table-caption">Table 4: Pilot architecture fails at scale. AUC drops from 0.917 → 0.713.</div>
+
+<div class="box box-red">
+  <div class="box-title">❌ Root Cause Analysis: Why the Architecture Failed</div>
+  <ol>
+    <li><strong>ImageNet domain mismatch.</strong> ResNet50 was pretrained on 1.2M natural images (cats, dogs, cars). Low-level features from natural images are fundamentally mismatched with the subtle opacity differences and air bronchograms in chest X-rays.</li>
+    <li><strong>Insufficient data for domain transfer.</strong> 1,401 training images cannot adequately override 1.2M images of ImageNet pretraining to learn clinical pathology from scratch.</li>
+    <li><strong>Clinical data complexity.</strong> Real MIMIC-CXR images contain medical devices, overlapping bones, varying scanner exposures, and positioning artefacts entirely absent from pre-cleaned Kaggle data.</li>
+  </ol>
+</div>
+
+<!-- SECTION 7 -->
+<div class="section-title">7. Discussion and Conclusion</div>
+
+<div class="subsection-title">7.1 Key Findings</div>
+
+<ul>
+  <li><strong>Public benchmarks ≠ clinical performance.</strong> 92% on Kaggle collapsed to 66.2% on real MIMIC-CXR data. High public-dataset performance gives dangerously false clinical confidence.</li>
+  <li><strong>The anti-leakage text pipeline works.</strong> Leakage-free text fusion provided a genuine +3.7% AUC improvement. FINDINGS + INDICATION contain real diagnostic signal beyond visual features.</li>
+  <li><strong>Small test sets are statistically meaningless.</strong> AUC=0.917 on N=7 had CI [59.8%, 100%]. The honest N=293 result is AUC=0.713. Documenting this gap is the most important scientific result of Part 1.</li>
+  <li><strong>The ResNet50+DSC+GCSA architecture must be discarded.</strong> ImageNet pretraining is fundamentally insufficient for clinical-scale CXR classification.</li>
+</ul>
+
+<div class="subsection-title">7.2 Limitations</div>
+<ul>
+  <li>Single institution (Beth Israel Deaconess Medical Center).</li>
+  <li>Binary classification only (Normal vs. Pneumonia); clinical radiology involves 14+ thoracic findings.</li>
+  <li>No external validation on NIH ChestX-ray14 or CheXpert.</li>
+  <li>Text fusion was only tested on 139-sample pilot, not at clinical scale.</li>
+</ul>
+
+<div class="subsection-title">7.3 Conclusion and Part 2 Roadmap</div>
+
+<p>Part 1 delivered three contributions: <strong>(1)</strong> a robust anti-leakage data preparation pipeline; <strong>(2)</strong> rigorous proof that public-dataset results do not translate to clinical environments; and <strong>(3)</strong> the discovery that ResNet50+DSC+GCSA fails at clinical scale (AUC=0.713), motivating a complete architectural pivot.</p>
+
+<div class="box box-green">
+  <div class="box-title">✅ Part 2 Roadmap — The Solution</div>
+  <ol>
+    <li><strong>DenseNet-121 [5]</strong> from <code>torchxrayvision</code>, pretrained on >500,000 actual CXRs (CheXpert, NIH, MIMIC-CXR) — directly solving the domain-mismatch failure.</li>
+    <li>Scale to 1,989+ PA images with patient-level GroupShuffleSplit.</li>
+    <li>Multimodal fusion at scale: Bio_ClinicalBERT + cross-attention fusion.</li>
+    <li>Phase 3: Triple-modality fusion incorporating MIMIC-IV lab values (WBC, CRP, Procalcitonin).</li>
+    <li>5-fold GroupKFold cross-validation for robust statistical evaluation.</li>
+  </ol>
+</div>
+
+<div class="subsection-title">Artifacts and Code</div>
+<ul>
+  <li><strong>Repository:</strong> github.com/Ashutosh-yadav0001/PneumoFusionNet</li>
+  <li><strong>Stage 0 (4 notebooks):</strong> <code>model_experiments/</code> (v1, v2, v3-1, v3-2)</li>
+  <li><strong>Stage 1 (4 notebooks):</strong> <code>mimic/mimic_pilot_139/Notebooks/</code></li>
+  <li><strong>Stage 1 scripts:</strong> <code>build_dataset.py</code>, <code>rebuild_dataset_findings.py</code></li>
+  <li><strong>Stage 2 notebook:</strong> <code>Phase-1.1-pilot_arch_scaleUp_ResNet_DSC_GCSA.ipynb</code></li>
+  <li><strong>MIMIC-CXR data:</strong> Restricted — PhysioNet DUA + CITI training required.</li>
+</ul>
+
+<!-- REFERENCES -->
+<div class="section-title">References</div>
+<div class="references">
+  <div class="ref-item">[1] World Health Organization, "Pneumonia," WHO Fact Sheet, 2023. [Online]. Available: who.int/news-room/fact-sheets/detail/pneumonia</div>
+  <div class="ref-item">[2] S. Yu et al., "A multi-modal deep learning solution for precise pneumonia diagnosis: the PneumoFusion-Net model," <em>Frontiers in Physiology</em>, Sec. Computational Physiology and Medicine, vol. 16, Art. 1512835, 12 Mar. 2025. DOI: 10.3389/fphys.2025.1512835</div>
+  <div class="ref-item">[3] A. E. W. Johnson et al., "MIMIC-CXR, a de-identified publicly available database of chest radiographs with free-text reports," <em>Scientific Data</em>, vol. 6, no. 317, 2019.</div>
+  <div class="ref-item">[4] K. He, X. Zhang, S. Ren, and J. Sun, "Deep Residual Learning for Image Recognition," <em>Proc. IEEE CVPR</em>, 2016, pp. 770–778.</div>
+  <div class="ref-item">[5] G. Huang, Z. Liu, L. van der Maaten, and K. Q. Weinberger, "Densely Connected Convolutional Networks," <em>Proc. IEEE CVPR</em>, 2017, pp. 4700–4708.</div>
+  <div class="ref-item">[6] E. Alsentzer et al., "Publicly Available Clinical BERT Embeddings," <em>arXiv:1904.03323</em>, 2019.</div>
+  <div class="ref-item">[7] P. Rajpurkar et al., "CheXNet: Radiologist-Level Pneumonia Detection on Chest X-Rays with Deep Learning," <em>arXiv:1711.05225</em>, 2017.</div>
+</div>
+
+</div><!-- end two-col -->
+
+</body>
+</html>
