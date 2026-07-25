@@ -1,26 +1,42 @@
-# 🫁 PneumoFusionNet on MIMIC-CXR
+# 🫁 PneumoFusionNet: Multimodal Deep Learning for Pneumonia Detection on MIMIC-CXR
 
 [![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-1.12.1-red.svg)](https://pytorch.org/)
+[![PyTorch 1.12.1](https://img.shields.io/badge/PyTorch-1.12.1-red.svg)](https://pytorch.org/)
 [![HuggingFace Transformers](https://img.shields.io/badge/%F0%9F%A4%97-Transformers-orange)](https://huggingface.co/docs/transformers/index)
 [![Dataset](https://img.shields.io/badge/PhysioNet-MIMIC--CXR--JPG-lightgrey)](https://physionet.org/content/mimic-cxr-jpg/2.0.0/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-> **PneumoFusionNet-MIMIC is a multimodal deep learning framework for explainable pneumonia classification. Aligned with the 2025 Frontiers in Physiology study, the pipeline integrates a modified ResNet50 visual backbone—enhanced with Global Channel-Spatial Attention (GCSA) and Depthwise Separable Convolutions (DSC)—with a Bio_ClinicalBERT text encoder to achieve joint classification from chest X-rays and raw clinical reports.**
+> **PneumoFusionNet** is an explainable, multimodal deep learning framework for binary pneumonia diagnosis. Aligned with state-of-the-art medical AI literature (*Frontiers in Physiology, 2025*), the pipeline fuses high-resolution visual embeddings from chest X-rays with text representations from raw radiology reports (Bio_ClinicalBERT) and clinical metadata (demographics, vitals, lab values). 
+> 
+> 🏆 **Peak Performance (Phase 2v2 SOTA)**: **0.9490 AUC** | **91.37% Clinical Sensitivity** | **88.63% Test Accuracy**
+
+---
+
+## 📋 Table of Contents
+
+- [Project Overview](#-project-overview)
+- [Architecture & Pipeline](#-architecture--pipeline)
+- [Anti-Leakage Protocol](#-anti-leakage-protocol)
+- [Experimental Results](#-experimental-results)
+- [Repository Structure](#-repository-structure)
+- [Documentation & Media Assets](#-documentation--media-assets)
+- [Setup & Installation](#-setup--installation)
+- [Data Access Notice](#-data-access-notice)
+- [Author & Citation](#-author--citation)
 
 ---
 
 ## 📋 Project Overview
 
-PneumoFusionNet is a state-of-the-art multimodal deep learning framework designed to diagnose binary pneumonia by fusing information from multiple clinical modalities. This repository implements a pipeline using the **MIMIC-CXR JPG** dataset (P10 subset) across multiple research phases:
+Medical diagnosis of pneumonia using chest radiography (CXR) alone is subject to visual ambiguity and inter-observer variability. Human clinicians synthesize visual findings with clinical history, lab metrics, and radiology notes. **PneumoFusionNet** models this clinical workflow through a progressive multi-phase architecture on the restricted **MIMIC-CXR** dataset:
 
 ```
-Phase 1: Image Only ──► Phase 2: Multimodal (Image + Text) ──► Phase 3: Triple Fusion (Image + Text + Clinical Metadata)
+Phase 1: Vision Backbone ──► Phase 2: Multimodal (Image + Text) ──► Phase 3: Triple Fusion (Image + Text + Lab/Vitals)
 ```
 
-1. **Phase 1 (Chest X-ray Image Classifier)**: Extracting visual embeddings using a custom CNN backbone enhanced with spatial attention.
-2. **Phase 2 (Multimodal Fusion)**: Fusing visual embeddings with ClinicalBERT representations parsed from raw radiology text reports.
-3. **Phase 3 (Triple Fusion)**: Extending the fusion network to incorporate tabular demographics, vitals, and laboratory measurements (16 clinical features) parsed from MIMIC-IV alongside reports and images.
+1. **Phase 1 (Visual Classifier)**: Pre-trained visual backbones (ResNet50 / DenseNet-121) augmented with Global Context Spatial Attention (GCSA / CBAM), Depthwise Separable Convolutions (DSC), Contrast Limited Adaptive Histogram Equalization (CLAHE), and Test-Time Augmentation (TTA).
+2. **Phase 2 (Multimodal Cross-Attention Fusion)**: Fuses visual feature maps with domain-specific text embeddings from Bio_ClinicalBERT via 8-head Multihead Cross-Attention, optimized with Focal Loss and embedding Mixup.
+3. **Phase 3 (Triple Fusion)**: Integrates 16 clinical metadata variables (demographics, vital signs, and laboratory values from MIMIC-IV) alongside visual and textual modalities.
 
 ---
 
@@ -28,204 +44,235 @@ Phase 1: Image Only ──► Phase 2: Multimodal (Image + Text) ──► Phase
 
 ```mermaid
 graph TD
-    subgraph Phase 1: Visual Network
-        Img[Chest X-ray Image] --> ResNet[ResNet50 Backbone]
-        ResNet --> DSC[Depthwise Separable Conv]
-        DSC --> GCSA[Global Context Spatial Attention]
-        GCSA --> ImgEmb[1024-d Image Embedding]
+    subgraph Modality 1: Vision Branch
+        Img[Chest X-ray Image] --> Preproc[CLAHE Preprocessing]
+        Preproc --> VisionBackbone["DenseNet-121 / ResNet50"]
+        VisionBackbone --> DSC[Depthwise Separable Conv]
+        DSC --> Attention[CBAM / GCSA Spatial Attention]
+        Attention --> ImgEmb[1024-d Image Embedding]
     end
 
-    subgraph Phase 2: Multimodal Fusion
-        Report[Radiology Report Text] --> Clean[Exclude IMPRESSION Section]
-        Clean --> BERT[Bio_ClinicalBERT Encoder]
-        BERT --> TextEmb[768-d Text Embedding]
-        ImgEmb & TextEmb --> CrossAttention[Cross-Attention Fusion]
+    subgraph Modality 2: Clinical Text Branch
+        Report[Radiology Report Text] --> LeakageFilter[Anti-Leakage Parser\nExclude IMPRESSION / Redact Keywords]
+        LeakageFilter --> BERT[Bio_ClinicalBERT Encoder\nLast 2 Layers Unfrozen]
+        BERT --> TextEmb[768-d Text Tokens]
     end
 
-    subgraph Phase 3: Triple Fusion
-        Metadata[16 Tabular Features] --> MetaMLP[Metadata MLP Encoder]
+    subgraph Cross-Attention & Multimodal Fusion
+        ImgEmb & TextEmb --> CrossAttn["8-Head Multihead Cross-Attention\n(Image queries Text)"]
+        CrossAttn --> FusedEmb[512-d Multimodal Vector]
+    end
+
+    subgraph Modality 3: Clinical Metadata Branch (Phase 3)
+        ClinicalData[16 Clinical Features\nVitals + Labs + Demographics] --> MetaMLP[Metadata MLP Encoder]
         MetaMLP --> MetaEmb[64-d Metadata Embedding]
-        CrossAttention & MetaEmb --> Concat[Concatenation]
-        Concat --> FinalMLP[Triple Fusion MLP Classifier]
-        FinalMLP --> Out[Binary Pneumonia Classifier]
+    end
+
+    subgraph Decision Head
+        FusedEmb & MetaEmb --> ConcatLayer[Feature Concatenation]
+        ConcatLayer --> FocalHead[Classification MLP Head\nFocal Loss gamma=2.0]
+        FocalHead --> Output[Binary Pneumonia Classifier]
+        FocalHead --> Explain[Grad-CAM Heatmap Visualization]
     end
 ```
 
-### Key Components
+### Core Innovations
 
-*   **ResNet50 Backbone**: Deep feature extractor pre-trained on ImageNet.
-*   **Depthwise Separable Convolution (DSC)**: Dramatically reduces feature dimensions from 2048 to 1024 with minimal parameter overhead.
-*   **Global Context Spatial Attention (GCSA)**: Focuses the feature extractor on key pathological areas of the chest X-rays.
-*   **Bio_ClinicalBERT**: A BERT transformer model pre-trained on clinical notes from MIMIC-III, capturing medical text semantics.
-*   **Metadata MLP Encoder**: A multilayer perceptron that transforms 16 clinical metadata features (demographics, vitals, and lab results) into a dense 64-d embedding.
+* **TorchXRayVision DenseNet-121 Backbone**: Pre-trained on multi-million chest X-rays to extract domain-specific radiological features.
+* **Global Context Spatial Attention (GCSA) & CBAM**: Captures long-range spatial dependencies and focuses network attention on pulmonary infiltrates and consolidation.
+* **Bio_ClinicalBERT Fine-Tuning**: Pre-trained on MIMIC-III clinical notes; top 2 layers are fine-tuned alongside the fusion network with separate learning rates ($10^{-5}$).
+* **Cross-Attention Fusion**: Allows image features to visually query tokenized clinical text (`FINDINGS` + `HISTORY`), capturing subtle disease indicators.
+* **Focal Loss ($\gamma = 2.0$) & Youden-J Thresholding**: Addresses dataset imbalance and targets clinical-grade sensitivity ($\ge 90\%$).
 
 ---
 
-## 🔒 Anti-Leakage & Anti-Cheating Design
+## 🔒 Anti-Leakage Protocol
 
-Radiology report summaries (specifically the `IMPRESSION` or `CONCLUSION` sections) routinely contain the final diagnoses. Training a model on these sections causes **label leakage** (the model reads the doctor's final diagnosis instead of diagnosing from the medical findings).
+Radiology report summaries (specifically `IMPRESSION` or `CONCLUSION` sections) routinely state the final clinical diagnosis. Standard multimodal models trained on raw reports suffer from severe **label leakage** (reading the written diagnosis instead of diagnosing from medical findings).
 
-To prevent this, our pipeline implements a **strict text-filtering strategy**:
-*   The raw report is parsed, and the `IMPRESSION` section is **completely removed** on-the-fly.
-*   The model must rely entirely on the image coupled with the clinical history, comparison statements, and findings sections of the report to make its classification.
+To ensure complete diagnostic integrity, our pipeline enforces strict on-the-fly text parsing:
+* **Impression Removal**: The `IMPRESSION` and `CONCLUSION` sections are completely stripped before tokenization.
+* **Keyword Redaction**: Specific diagnostic label triggers (e.g., explicit mentions of "pneumonia") in `FINDINGS` and `HISTORY` sections are redacted.
+* **Anti-Cheating Verification**: The network is forced to correlate visual opacities in the X-ray with descriptive findings (patient symptoms, fever, cough, auscultation notes).
 
 ---
 
 ## 📊 Experimental Results
 
-All pilot phases were trained using the exact same stratified 70/15/15 train/validation/test split (`SEED=42`) for a fair and leakage-free comparison.
+All experiments were systematically evaluated using reproducible seeds (`SEED=42`) and zero-patient-leakage splits (`GroupKFold` / stratified splits).
 
-| Phase | Modality | Dataset Strategy | Test AUC | Test Accuracy | Test F1 (macro) |
-| :--- | :--- | :--- | :---: | :---: | :---: |
-| **Phase 1** | Image Only | Imbalanced (118:21) | 0.6667 | 0.7619 | 0.4300 |
-| **Phase 1.1** | Image Only | **Balanced (21:21)** | **0.9167** | **0.8571** | **0.8571** |
-| **Phase 1.1 Scale-Up** | Image Only | **Pilot Arch (1,989 images)** | **0.7126** | **66.21%** | **0.6602** |
-| **Phase 2** | Image + Text | Imbalanced (118:21) | 0.7037 | 0.8095 | 0.4474 |
-| **Phase 2.1** | Image + Text | **Balanced (21:21)** | **0.9167** | **0.7143** | **0.7083** |
+### Master Experimental Benchmark
 
-*Integrating clinical text reports (even without the diagnostic impression) provides a significant diagnostic boost over chest X-rays alone on imbalanced sets, and matches the high AUC of image-only models on balanced sets while providing multimodal context.*
+| Phase / Model | Modality | Key Technical Enhancements | Test AUC | Accuracy | Sensitivity | Specificity | Notes |
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| **Phase 1 Baseline** | Image Only | Custom ResNet50 + GCSA (139 pilot) | 0.6667 | 76.19% | — | — | Early baseline |
+| **Phase 1.1 Balanced** | Image Only | ResNet50 + GCSA (Balanced cohort) | 0.9167 | 85.71% | — | — | Small balanced subset |
+| **Phase 1.1 Scale-Up** | Image Only | Pilot Arch (1,989 PA images) | 0.7126 | 66.21% | — | — | Raw unoptimized scaleup |
+| **Phase 1.1v4 CrossVal** | Image Only | DenseNet-121 + CBAM + CLAHE + 5-Fold + TTA | 0.8445 | 77.60% | 79.50% | 76.00% | Zero patient leakage CV |
+| **Phase 1.1v5 Advanced** | Image Only | DenseNet-121 + Batch Size 16 + Youden-J | 0.8591 | 77.90% | 76.40% | 79.30% | Peak image-only ceiling |
+| **Phase 2 v1 Concat** | Image + Text | Frozen ClinicalBERT + FINDINGS text | 0.9109 | 85.30% | 80.60% | 89.40% | +6.6% AUC jump over image |
+| **Phase 2 v2 SOTA 🏆** | **Image + Text** | **Cross-Attention + Unfrozen BERT + Focal Loss + FINDINGS+HISTORY** | **0.9490** | **88.63%** | **91.37%** | **86.30%** | **Publication-grade SOTA** |
+| **Phase 3 Triple Fusion** | Image + Text + Metadata | 16 Clinical Features (Demographics, Vitals, Labs) | *In Progress* | *In Progress* | *In Progress* | *In Progress* | MIMIC-IV integration |
 
-### 🚀 Phase 2v2 -- Final Results & Summary of Improvements
+### 🚀 Phase 2v2 Key Breakdown
 
-| Improvement | Architectural Change | Actual Achieved Impact |
-|-------------|----------------------|-------------------------|
-| **Text: FINDINGS + HISTORY** | Richer BERT sequence input | **+3.8% AUC** (combined jump to 0.949) |
-| **Unfreeze last 2 BERT layers** | Task-specific text fine-tuning | **Feature alignment improved** |
-| **Cross-Attention Fusion** | Image visually queries text tokens | **Accuracy +3.3%** (reached 88.6%) |
-| **Focal Loss (gamma=2)** | Focus loss on hard-to-classify samples | **Sensitivity +10.8%** (Huge leap) |
-| **Mixup on embeddings** | Vector-level regularisation | **Validation stability improved** |
-| **Clinical threshold** | Target Sensitivity >= 90% | **Naturally achieved 91.4%** at Youden-J |
-| **Grad-CAM** | Visual feature mapping | **Clear heatmap localisations** |
-
-#### 📊 The Final Verdict
-
-By implementing state-of-the-art techniques like **Cross-Attention**, **Focal Loss**, and **Domain-Specific Fine-tuning**, the model broke past the baseline visual ceiling. 
-
-The final **PneumoFusionNet Phase 2v2** achieved:
-* **AUC:** 0.9490 *(Publication-level)*
-* **Sensitivity:** 91.37% *(Clinically viable)*
-* **Accuracy:** 88.63% *(Highly reliable)*
-
-#### Next Steps (Phase 3)
-- Add clinical metadata (age, gender, vitals) as 3rd modality
-- BioViL-T: Microsoft pretrained CXR vision-language model
-- External validation on NIH ChestX-ray14
+| Technique | Architectural Action | Impact / Achievement |
+| :--- | :--- | :--- |
+| **Expanded Context** | Switched input text from `FINDINGS` $\rightarrow$ `FINDINGS` + `HISTORY` | **+3.8% AUC** (jumped to 0.9490) |
+| **Task Fine-Tuning** | Unfrozen last 2 layers of Bio_ClinicalBERT ($lr=10^{-5}$) | **Cross-modal feature alignment** |
+| **Cross-Attention** | 8-Head Multihead Attention (Image queries Text) | **+3.3% Test Accuracy** (reached 88.63%) |
+| **Focal Loss ($\gamma=2.0$)** | Replaced standard Cross-Entropy loss | **+10.8% Sensitivity** (leapt to 91.37%) |
+| **Grad-CAM Visuals** | Feature mapping on GCSA/CBAM attention layers | **Interpretable pulmonary heatmaps** |
 
 ---
-
 
 ## 📁 Repository Structure
 
 ```text
 PneumoFusionNet/
-│
 ├── mimic/
-│   ├── mimic_pilot_139/
-│   │   ├── dataset_139/
-│   │   │   ├── mimic_dataset.csv               # Image-only baseline dataset (139 samples)
-│   │   │   └── mimic_multimodal_dataset_v3.csv  # Multimodal dataset metadata (no impression)
-│   │   │
-│   │   ├── reports/txt/                         # Raw text radiology reports (.txt)
-│   │   │
-│   │   ├── Notebooks/
-│   │   │   ├── Phase-1-image_classifier.ipynb                 # Phase 1: Image only (Imbalanced baseline)
-│   │   │   ├── Phase-1.1-image_classifier(balanced-Set).ipynb  # Phase 1.1: Image only (Balanced cohort)
-│   │   │   ├── Phase-2-multimodal_classifier.ipynb            # Phase 2: Multimodal (Imbalanced)
-│   │   │   └── Phase-2.1-multimodal_classifier(balanced-Set).ipynb  # Phase 2.1: Multimodal (Balanced)
-│   │   │
-│   │   ├── outputs/                              # Evaluation outputs & checkpoints
-│   │   │   ├── phase_1/                          # Phase 1 metrics and weights
-│   │   │   ├── Phase_1.1(balanced set)/          # Phase 1.1 metrics and weights
-│   │   │   ├── phase_2/                          # Phase 2 metrics and weights
-│   │   │   └── Phase_2.1(balanced set)/          # Phase 2.1 metrics and weights
-│   │   │
-│   │   ├── README.md                             # Sub-directory documentation
-│   │   └── pilot_experiment_summary.md           # Research analysis and roadmap report
-
+│   ├── main/                                  # Primary Multi-Phase Pipelines
+│   │   ├── Phase-1/                           # Phase 1: Visual Classifiers (DenseNet121 / ResNet50)
+│   │   ├── Phase-2/                           # Phase 2: Multimodal Fusion (Concat & Cross-Attention)
+│   │   ├── Phase-3/                           # Phase 3: Triple Fusion (Image + Text + 16 Metadata features)
+│   │   ├── Scaleup/                           # Scaled dataset experiment pipelines
+│   │   ├── main_Subset/                       # Subsplit experiment scripts & data loaders
+│   │   └── outputs/                           # Checkpoints, metrics, and ROC/PR plots
 │   │
-│   ├── .gitignore
-│   ├── README.md
-│   └── requirements.txt
+│   ├── 1000_dataset/                          # 1,000 Balanced MIMIC Cohort Guides & CSVs
+│   │   └── README.md                          # Step-by-step extraction & pairing guide
+│   │
+│   ├── mimic_pilot_139/                       # Pilot 139 Cohort Baseline
+│   │   ├── dataset_139/                       # Metadata CSV files
+│   │   ├── reports/txt/                       # Raw text radiology reports (.txt)
+│   │   ├── Notebooks/                         # Phase 1, Phase 1.1, Phase 2, Phase 2.1 Jupyter notebooks
+│   │   └── outputs/                           # Saved weights and evaluation plots
+│   │
+│   ├── mimiciv/                               # MIMIC-IV Tabular EHR Processing (Vitals & Labs)
+│   ├── requirements.txt                       # MIMIC pipeline dependencies
+│   └── README.md                              # MIMIC sub-folder guide
 │
-├── model_experiments/                            # General model & various dataset experiments
+├── docs/                                      # Research Papers, Presentations & Documentation
+│   ├── main.tex                               # Full IEEE Conference Paper (LaTeX source)
+│   ├── term_project_report.md                 # Complete Term Project Report (Markdown)
+│   ├── term_project_report_FINAL.html         # Formatted HTML Project Report
+│   ├── Summary till now (05 july).md          # Comprehensive metric progression document
+│   ├── PneumoFusionNet_Presentation.pptx      # Official Slide Deck (81 MB)
+│   ├── PneumoFusionNet_Part1_Presentation.pptx# Part 1 Presentation Deck
+│   ├── PneumoFusionNet_Presentation.mp4       # Full Project Video Walkthrough (404 MB)
+│   ├── video_script_FINAL.md                  # Video Narration Script
+│   ├── ppt_slides.md                          # Presentation Slide Outlines
+│   ├── refs.bib                               # Bibliography database
+│   └── figures/                               # Architectural diagrams and evaluation figures
+│
+├── model_experiments/                         # Pre-experiment Jupyter Notebooks
 │   ├── v1_Basic_Image_Model.ipynb
 │   ├── v2_Enhanced_Image_Model_GCSA_DSC.ipynb
 │   ├── v3-1-iu-dataset-multimodal-image-baseline.ipynb
 │   └── v3-2-iu-dataset-multimodal-image-text.ipynb
 │
-├── experiment_results/                           # Stored evaluation metrics and plots
-│   └── V2_results/
-│       ├── best_model_acc.pth
-│       ├── confusion_matrix.png
-│       └── roc_curve.png
+├── experiment_results/                        # Checkpoints & Saved Visualizations
+│   └── V2_results/                            # Confusion matrices, ROC curves, best model weights
 │
-├── README.md                                     # Main repository README (this file)
-└── .gitignore
+├── requirements.txt                           # Global project dependencies
+├── .gitignore
+└── README.md                                  # Main repository README
 ```
+
+---
+
+## 📄 Documentation & Media Assets
+
+All project deliverables and presentations are included in the [`docs/`](docs/) directory:
+
+- 📄 **IEEE Conference Paper**: [`docs/main.tex`](docs/main.tex) - Full LaTeX source formatted in standard IEEE style (`spconf.sty`).
+- 📝 **Term Project Report**: [`docs/term_project_report.md`](docs/term_project_report.md) & [`docs/term_project_report_FINAL.html`](docs/term_project_report_FINAL.html).
+- 📊 **Presentation Slides**: [`docs/PneumoFusionNet_Presentation.pptx`](docs/PneumoFusionNet_Presentation.pptx).
+- 🎥 **Video Presentation**: [`docs/PneumoFusionNet_Presentation.mp4`](docs/PneumoFusionNet_Presentation.mp4) (404 MB complete audio/video demonstration).
+- 🎙️ **Video Script**: [`docs/video_script_FINAL.md`](docs/video_script_FINAL.md).
+- 📈 **Experiment Summary Report**: [`docs/Summary till now (05 july).md`](docs/Summary%20till%20now%20%2805%20july%29.md) - Deep dive into every iteration from Phase 1.1 to Phase 2v2.
 
 ---
 
 ## ⚙️ Setup & Installation
 
 ### Prerequisites
-*   Python 3.10+
-*   NVIDIA GPU with CUDA support (e.g., NVIDIA RTX 3050 Laptop GPU, CUDA 11.2+)
+* **Python**: 3.10+
+* **Hardware**: NVIDIA GPU with CUDA 11.3+ support (e.g., RTX 3050 / RTX 3090 / A100)
 
-### 1. Clone & Initialize Environment
+### 1. Clone Repository & Setup Environment
+
 ```bash
 git clone https://github.com/Ashutosh-yadav0001/PneumoFusionNet.git
 cd PneumoFusionNet
 
-# Create a python virtual environment
-python -m venv mimic/venv_PneumoFusionNet
-source mimic/venv_PneumoFusionNet/bin/activate  # On Linux/macOS
-# OR
-mimic\venv_PneumoFusionNet\Scripts\activate     # On Windows
+# Create Python Virtual Environment
+python -m venv venv_PneumoFusionNet
+
+# Activate Environment
+# Windows:
+venv_PneumoFusionNet\Scripts\activate
+# Linux/macOS:
+source venv_PneumoFusionNet/bin/activate
 ```
 
-### 2. Install PyTorch & Core Libraries
-Install PyTorch with CUDA support. For CUDA 11.2+:
+### 2. Install PyTorch & Dependencies
+
+Install PyTorch compiled for CUDA 11.3+:
+
 ```bash
 pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 --extra-index-url https://download.pytorch.org/whl/cu113
 ```
 
-Install remaining dependencies:
+Install core dependencies (Transformers, TorchXRayVision, scikit-learn, OpenCV, etc.):
+
 ```bash
-pip install -r mimic/requirements.txt
+pip install -r requirements.txt
 ```
 
-### 3. Launch Notebooks
+### 3. Launch Jupyter Lab
+
 ```bash
-# Register the environment kernel with Jupyter
+# Register kernel in Jupyter
 python -m ipykernel install --user --name=venv_PneumoFusionNet --display-name "PneumoFusionNet"
 
-# Launch Jupyter
+# Launch JupyterLab
 jupyter lab
 ```
 
 ---
 
-## 📦 Data Subset Preparation (1,000 Cohort)
+## 🔑 Data Access Notice
 
-For replicating the multimodal pipeline with a larger, balanced cohort of 1,000 cases (500 Pneumonia, 500 Normal), we have provided a detailed step-by-step data extraction, download, and pairing guide.
+**MIMIC-CXR** and **MIMIC-IV** are credentialed-access clinical databases hosted by PhysioNet. To access raw DICOM/JPG images, radiology text notes, or tabular patient records:
 
-👉 **Refer to the [MIMIC-CXR 1,000 Cohort Data Preparation Guide](mimic/1000_dataset/README.md)** for complete details on how to recreate this dataset.
-
----
-
-## 🔑 Data Access Warning
-
-MIMIC-CXR and MIMIC-IV are restricted-access datasets. To download the clinical notes and image paths used here:
-1. Complete the CITI training course on human subjects research.
+1. Complete the CITI Training Course ("Human Subjects Research - Data or Specimens Only").
 2. Sign the PhysioNet Data Use Agreement (DUA).
-3. Request access via the [PhysioNet MIMIC-CXR Page](https://physionet.org/content/mimic-cxr-jpg/2.0.0/).
+3. Submit an access request on [PhysioNet MIMIC-CXR-JPG](https://physionet.org/content/mimic-cxr-jpg/2.0.0/).
+4. Follow our [1,000 Cohort Guide](mimic/1000_dataset/README.md) to generate matching image-text-metadata pairs.
 
 ---
 
-## 👨‍💻 Author
+## 👨‍💻 Author & Citation
 
 **Ashutosh Yadav**  
-*   **Affiliation**: Indian Institute of Technology Guwahati (IIT Guwahati)  
-*   **Specialization**: B.Sc. in Data Science & Artificial Intelligence  
-*   **Email**: [ay346185@gmail.com](mailto:ay346185@gmail.com)  
-*   **GitHub**: [@Ashutosh-yadav0001](https://github.com/Ashutosh-yadav0001)  
+* **Affiliation**: Indian Institute of Technology Guwahati (IIT Guwahati)  
+* **Program**: B.Sc. (Honours) in Data Science & Artificial Intelligence  
+* **Email**: [ashutosh@op.iitg.ac.in](mailto:ashutosh@op.iitg.ac.in) | [ay346185@gmail.com](mailto:ay346185@gmail.com)  
+* **GitHub**: [@Ashutosh-yadav0001](https://github.com/Ashutosh-yadav0001)
+
+### BibTeX Citation
+
+If you use PneumoFusionNet in your research, please cite:
+
+```bibtex
+@article{yadav2025pneumofusionnet,
+  title={PneumoFusionNet: Explainable Multimodal Deep Learning for Pneumonia Detection from MIMIC-CXR X-Rays and Clinical Reports},
+  author={Yadav, Ashutosh},
+  journal={Department of Data Science and Artificial Intelligence, IIT Guwahati},
+  year={2025}
+}
+```
+
+---
+*Built with ❤️ at IIT Guwahati.*
