@@ -4,11 +4,15 @@
 [![PyTorch 1.12.1](https://img.shields.io/badge/PyTorch-1.12.1-red.svg)](https://pytorch.org/)
 [![HuggingFace Transformers](https://img.shields.io/badge/%F0%9F%A4%97-Transformers-orange)](https://huggingface.co/docs/transformers/index)
 [![Dataset](https://img.shields.io/badge/PhysioNet-MIMIC--CXR--JPG-lightgrey)](https://physionet.org/content/mimic-cxr-jpg/2.0.0/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Changelog](https://img.shields.io/badge/Changelog-v1.0.0-informational)](CHANGELOG.md)
+[![Contributing](https://img.shields.io/badge/Contributing-welcome-brightgreen)](CONTRIBUTING.md)
 
 > **PneumoFusionNet** is an explainable, multimodal deep learning framework for binary pneumonia diagnosis. Aligned with state-of-the-art medical AI literature (*Frontiers in Physiology, 2025*), the pipeline fuses high-resolution visual embeddings from chest X-rays with text representations from raw radiology reports (Bio_ClinicalBERT) and clinical metadata (demographics, vitals, lab values). 
 > 
-> 🏆 **Peak Performance (Phase 2v2 SOTA)**: **0.9490 AUC** | **91.37% Clinical Sensitivity** | **88.63% Test Accuracy**
+> 🏆 **Phase 2v2 SOTA**: **0.9490 AUC** | **91.37% Sensitivity** | **88.63% Accuracy**
+> 
+> 🚀 **Phase 3 BEST**: **0.9890 AUC** | **89.1% Sensitivity** | **94.3% Specificity** | **91.7% Accuracy** (Triple Fusion, ~3,763 images)
 
 ---
 
@@ -21,6 +25,7 @@
 - [Repository Structure](#-repository-structure)
 - [Documentation & Media Assets](#-documentation--media-assets)
 - [Setup & Installation](#-setup--installation)
+- [Quick Start](#-quick-start)
 - [Data Access Notice](#-data-access-notice)
 - [Author & Citation](#-author--citation)
 
@@ -112,7 +117,8 @@ All experiments were systematically evaluated using reproducible seeds (`SEED=42
 | **Phase 1.1v5 Advanced** | Image Only | DenseNet-121 + Batch Size 16 + Youden-J | 0.8591 | 77.90% | 76.40% | 79.30% | Peak image-only ceiling |
 | **Phase 2 v1 Concat** | Image + Text | Frozen ClinicalBERT + FINDINGS text | 0.9109 | 85.30% | 80.60% | 89.40% | +6.6% AUC jump over image |
 | **Phase 2 v2 SOTA 🏆** | **Image + Text** | **Cross-Attention + Unfrozen BERT + Focal Loss + FINDINGS+HISTORY** | **0.9490** | **88.63%** | **91.37%** | **86.30%** | **Publication-grade SOTA** |
-| **Phase 3 Triple Fusion** | Image + Text + Metadata | 16 Clinical Features (Demographics, Vitals, Labs) | *In Progress* | *In Progress* | *In Progress* | *In Progress* | MIMIC-IV integration |
+| **Phase 3 Half (~1,857)** | Image + Text + Metadata | 16 Clinical Features + Warm-start from Phase 2 | **0.9841** | **94.7%** | **94.9%** | **94.5%** | Triple Fusion |
+| **Phase 3 Scaleup 🚀** | **Image + Text + Metadata** | **17 Clinical Features (~3,763 images)** | **0.9890** | **91.7%** | **89.1%** | **94.3%** | **Best overall AUC** |
 
 ### 🚀 Phase 2v2 Key Breakdown
 
@@ -130,53 +136,47 @@ All experiments were systematically evaluated using reproducible seeds (`SEED=42
 
 ```text
 PneumoFusionNet/
-├── mimic/
-│   ├── main/                                  # Primary Multi-Phase Pipelines
-│   │   ├── Phase-1/                           # Phase 1: Visual Classifiers (DenseNet121 / ResNet50)
-│   │   ├── Phase-2/                           # Phase 2: Multimodal Fusion (Concat & Cross-Attention)
-│   │   ├── Phase-3/                           # Phase 3: Triple Fusion (Image + Text + 16 Metadata features)
-│   │   ├── Scaleup/                           # Scaled dataset experiment pipelines
-│   │   ├── main_Subset/                       # Subsplit experiment scripts & data loaders
+├── mimic/                                     # ⭐ Primary experiment directory
+│   ├── main/                                  # Multi-Phase Pipeline Notebooks & Scripts
+│   │   ├── Phase-1/                           # Phase 1: DenseNet-121 + CBAM visual classifiers
+│   │   ├── Phase-2/                           # Phase 2: Bio_ClinicalBERT + CrossAttention fusion
+│   │   ├── Phase-3/                           # Phase 3: Triple Fusion (Image + Text + Metadata)
+│   │   ├── Scaleup/                           # Scale-up experiments (~3,763 images)
+│   │   ├── dataset/                           # CSV manifests & dataset build scripts
 │   │   └── outputs/                           # Checkpoints, metrics, and ROC/PR plots
 │   │
 │   ├── 1000_dataset/                          # 1,000 Balanced MIMIC Cohort Guides & CSVs
-│   │   └── README.md                          # Step-by-step extraction & pairing guide
-│   │
-│   ├── mimic_pilot_139/                       # Pilot 139 Cohort Baseline
-│   │   ├── dataset_139/                       # Metadata CSV files
-│   │   ├── reports/txt/                       # Raw text radiology reports (.txt)
-│   │   ├── Notebooks/                         # Phase 1, Phase 1.1, Phase 2, Phase 2.1 Jupyter notebooks
-│   │   └── outputs/                           # Saved weights and evaluation plots
-│   │
-│   ├── mimiciv/                               # MIMIC-IV Tabular EHR Processing (Vitals & Labs)
-│   ├── requirements.txt                       # MIMIC pipeline dependencies
+│   ├── mimic_pilot_139/                       # Pilot 139-image cohort (Phase 1 baseline)
+│   ├── mimiciv/                               # MIMIC-IV tabular EHR processing
 │   └── README.md                              # MIMIC sub-folder guide
 │
-├── docs/                                      # Research Papers, Presentations & Documentation
-│   ├── main.tex                               # Full IEEE Conference Paper (LaTeX source)
-│   ├── term_project_report.md                 # Complete Term Project Report (Markdown)
-│   ├── term_project_report_FINAL.html         # Formatted HTML Project Report
-│   ├── Summary till now (05 july).md          # Comprehensive metric progression document
-│   ├── PneumoFusionNet_Presentation.pptx      # Official Slide Deck (81 MB)
-│   ├── PneumoFusionNet_Part1_Presentation.pptx# Part 1 Presentation Deck
-│   ├── PneumoFusionNet_Presentation.mp4       # Full Project Video Walkthrough (404 MB)
-│   ├── video_script_FINAL.md                  # Video Narration Script
-│   ├── ppt_slides.md                          # Presentation Slide Outlines
-│   ├── refs.bib                               # Bibliography database
-│   └── figures/                               # Architectural diagrams and evaluation figures
+├── src/                                       # 🐍 Reusable Python package (pip install -e .)
+│   ├── models/
+│   │   ├── vision.py                          # ChannelAttention, CBAM, EnhancedPneumoNetV4, ImageEncoder
+│   │   ├── text_encoder.py                    # TextEncoder (Bio_ClinicalBERT partial fine-tune)
+│   │   └── fusion.py                          # CrossAttnFusionNet, MetadataEncoder, TripleFusionNet
+│   ├── data/
+│   │   ├── dataset.py                         # CXRDataset, MultimodalCXRDataset, TripleModalCXRDataset
+│   │   └── preprocessing.py                   # CLAHE, bbox, anti-leakage text, TTA transforms
+│   └── utils/
+│       ├── metrics.py                         # evaluate, TTA eval, threshold selection, feat importance
+│       └── training.py                        # FocalLoss, Mixup variants, train loop, optimizer builder
 │
-├── model_experiments/                         # Pre-experiment Jupyter Notebooks
-│   ├── v1_Basic_Image_Model.ipynb
-│   ├── v2_Enhanced_Image_Model_GCSA_DSC.ipynb
-│   ├── v3-1-iu-dataset-multimodal-image-baseline.ipynb
-│   └── v3-2-iu-dataset-multimodal-image-text.ipynb
+├── docs/                                      # Research papers, presentations & documentation
+│   ├── API.md                                 # Full src/ module API reference
+│   ├── main.tex                               # IEEE Conference Paper (LaTeX source)
+│   ├── term_project_report_FINAL.html         # Formatted HTML project report
+│   └── figures/                               # Architecture diagrams and evaluation figures
 │
-├── experiment_results/                        # Checkpoints & Saved Visualizations
-│   └── V2_results/                            # Confusion matrices, ROC curves, best model weights
-│
+├── model_experiments/                         # Early exploratory notebooks (IU X-Ray dataset)
+├── experiment_results/                        # Saved visualisations and result artefacts
+├── pyproject.toml                             # Python package config (pip install -e .)
 ├── requirements.txt                           # Global project dependencies
-├── .gitignore
-└── README.md                                  # Main repository README
+├── CHANGELOG.md                               # Full version history
+├── CONTRIBUTING.md                            # Contribution guide
+├── CODE_OF_CONDUCT.md                         # Community standards
+├── LICENSE                                    # MIT License
+└── README.md                                  # This file
 ```
 
 ---
@@ -233,11 +233,49 @@ pip install -r requirements.txt
 ### 3. Launch Jupyter Lab
 
 ```bash
+# (Optional) Install src/ as an editable package for notebook imports:
+pip install -e .
+
 # Register kernel in Jupyter
 python -m ipykernel install --user --name=venv_PneumoFusionNet --display-name "PneumoFusionNet"
 
 # Launch JupyterLab
 jupyter lab
+```
+
+---
+
+## ⚡ Quick Start
+
+After installing the package (`pip install -e .`), you can import any component directly:
+
+```python
+import torch
+from src.models import ImageEncoder, TextEncoder, TripleFusionNet
+from src.data import TripleModalCXRDataset, get_val_transforms, build_report_text
+from src.utils import find_optimal_threshold, compute_metrics, set_seed
+
+# Reproducibility
+set_seed(42)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Build encoders
+img_enc  = ImageEncoder("mimic/main/outputs/.../best_model_fold5.pth").to(device)
+txt_enc  = TextEncoder().to(device)
+
+# Build Phase 3 triple fusion model
+model = TripleFusionNet().to(device)
+model.load_phase2_weights("mimic/main/outputs/.../best_v2_model.pth")
+
+# Run inference on a single image
+with torch.no_grad():
+    img_feat  = img_enc(images.to(device))           # (B, 1024)
+    txt_feat  = txt_enc(input_ids, attn_mask)        # (B, 256, 768)
+    logits    = model(img_feat, txt_feat, metadata)  # (B, 2)
+
+# Threshold selection
+threshold = find_optimal_threshold(test_labels, test_probs)
+results   = compute_metrics(test_labels, test_probs, threshold=threshold)
 ```
 
 ---
