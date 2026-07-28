@@ -24,6 +24,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `src/data/preprocessing.py` — CLAHE, lung bbox detection, anti-leakage text builder, TTA transforms
   - `src/utils/metrics.py` — evaluation, TTA, threshold selection, permutation importance
   - `src/utils/training.py` — `FocalLoss`, Mixup variants, training loop, optimizer builder
+- Added `Phase-3c-wbc_only_fusion.ipynb` and `Phase-3-triple_fusion_PA_WBC_ONLY_scaleup_features.ipynb` for WBC-specific clinical fusion experiments.
 - `pyproject.toml` — project is now `pip install -e .` installable
 - `LICENSE` (MIT)
 - `CONTRIBUTING.md`
