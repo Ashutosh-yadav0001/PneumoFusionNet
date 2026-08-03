@@ -118,6 +118,7 @@ All experiments were systematically evaluated using reproducible seeds (`SEED=42
 | **Phase 2 v1 Concat** | Image + Text | Frozen ClinicalBERT + FINDINGS text | 0.9109 | 85.30% | 80.60% | 89.40% | +6.6% AUC jump over image |
 | **Phase 2 v2 SOTA 🏆** | **Image + Text** | **Cross-Attention + Unfrozen BERT + Focal Loss + FINDINGS+HISTORY** | **0.9490** | **88.63%** | **91.37%** | **86.30%** | **Publication-grade SOTA** |
 | **Phase 3 Half (~1,857)** | Image + Text + Metadata | 16 Clinical Features + Warm-start from Phase 2 | **0.9841** | **94.7%** | **94.9%** | **94.5%** | Triple Fusion |
+| **Phase 3c (WBC-Only)** | Image + Text + Metadata | 1 Clinical Feature (WBC scalar MLP) | **0.9712** | **93.1%** | **92.3%** | **94.0%** | Single lab feature ablation |
 | **Phase 3 Scaleup 🚀** | **Image + Text + Metadata** | **17 Clinical Features (~3,763 images)** | **0.9890** | **91.7%** | **89.1%** | **94.3%** | **Best overall AUC** |
 
 ### 🚀 Phase 2v2 Key Breakdown
@@ -140,7 +141,7 @@ PneumoFusionNet/
 │   ├── main/                                  # Multi-Phase Pipeline Notebooks & Scripts
 │   │   ├── Phase-1/                           # Phase 1: DenseNet-121 + CBAM visual classifiers
 │   │   ├── Phase-2/                           # Phase 2: Bio_ClinicalBERT + CrossAttention fusion
-│   │   ├── Phase-3/                           # Phase 3: Triple Fusion (Image + Text + Metadata)
+│   │   ├── Phase-3/                           # Phase 3: Triple Fusion (Full Metadata & Phase 3c WBC-Only)
 │   │   ├── Scaleup/                           # Scale-up experiments (~3,763 images)
 │   │   ├── dataset/                           # CSV manifests & dataset build scripts
 │   │   └── outputs/                           # Checkpoints, metrics, and ROC/PR plots
