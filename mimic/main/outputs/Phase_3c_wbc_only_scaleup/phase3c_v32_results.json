@@ -1,0 +1,70 @@
+{
+  "phase": "3c_v3.2",
+  "description": "WBC-Only Triple Fusion (V3.2) -- Image + Text + WBC",
+  "architecture": {
+    "image_encoder": "DenseNet121+CBAM (frozen, Phase 1.1v4 Fold-5 Scaleup)",
+    "text_encoder": "Bio_ClinicalBERT (last 2 layers unfrozen, P2v2 warm-start)",
+    "meta_encoder": "WBCMetadataEncoder(1->128->128->64)",
+    "fusion": "8-Head CrossAttn(img->text) + concat WBC + MLP head",
+    "fused_dim": 1600,
+    "clinical_features": [
+      "wbc"
+    ]
+  },
+  "training": {
+    "n_train": 2633,
+    "n_val": 565,
+    "n_test": 565,
+    "batch_size": 16,
+    "epochs_run": 12,
+    "best_val_auc": 0.9692,
+    "lr_fusion": 0.0002,
+    "lr_bert": 1e-05,
+    "lr_meta": 0.001,
+    "focal_gamma": 2.0,
+    "mixup_alpha": 0.2
+  },
+  "results": {
+    "test_auc": 0.9711,
+    "default_acc": 0.9239,
+    "default_sensitivity": 0.9472,
+    "default_specificity": 0.9004,
+    "youden_threshold": 0.559,
+    "youden_acc": 0.9292,
+    "youden_sensitivity": 0.9225,
+    "youden_specificity": 0.9359,
+    "clinical_threshold": 0.5752,
+    "clinical_acc": 0.9274,
+    "clinical_sensitivity": 0.912,
+    "clinical_specificity": 0.9431,
+    "n_test": 565
+  },
+  "comparison": {
+    "phase_1": {
+      "auc": 0.8258,
+      "sens": 0.71,
+      "acc": 0.763
+    },
+    "phase_2v2": {
+      "auc": 0.946,
+      "sens": 0.903,
+      "spec": 0.891,
+      "acc": 0.878
+    },
+    "phase_3_full": {
+      "auc": 0.989,
+      "sens": 0.891,
+      "spec": 0.943,
+      "acc": 0.917
+    },
+    "phase_3c_wbc": {
+      "auc": 0.9711,
+      "sens": 0.9225,
+      "spec": 0.9359,
+      "acc": 0.9292
+    },
+    "auc_delta_vs_p2v2": 0.0251,
+    "auc_delta_vs_p3_full": -0.0179,
+    "sens_delta_vs_p2v2": 0.0195
+  }
+}
