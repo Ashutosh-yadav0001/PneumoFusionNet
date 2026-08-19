@@ -182,18 +182,7 @@ PneumoFusionNet/
 
 ---
 
-## 📄 Documentation & Media Assets
 
-All project deliverables and presentations are included in the [`docs/`](docs/) directory:
-
-- 📄 **IEEE Conference Paper**: [`docs/main.tex`](docs/main.tex) - Full LaTeX source formatted in standard IEEE style (`spconf.sty`).
-- 📝 **Term Project Report**: [`docs/term_project_report.md`](docs/term_project_report.md) & [`docs/term_project_report_FINAL.html`](docs/term_project_report_FINAL.html).
-- 📊 **Presentation Slides**: [`docs/PneumoFusionNet_Presentation.pptx`](docs/PneumoFusionNet_Presentation.pptx).
-- 🎥 **Video Presentation**: [`docs/PneumoFusionNet_Presentation.mp4`](docs/PneumoFusionNet_Presentation.mp4) (404 MB complete audio/video demonstration).
-- 🎙️ **Video Script**: [`docs/video_script_FINAL.md`](docs/video_script_FINAL.md).
-- 📈 **Experiment Summary Report**: [`docs/Summary till now (05 july).md`](docs/Summary%20till%20now%20%2805%20july%29.md) - Deep dive into every iteration from Phase 1.1 to Phase 2v2.
-
----
 
 ## ⚙️ Setup & Installation
 
