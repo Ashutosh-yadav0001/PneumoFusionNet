@@ -7,9 +7,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ---
 
 ## [Unreleased]
-- Phase 3 integration with full MIMIC-IV admission-level clinical features
 - Grad-CAM visualisation utility in `src/utils/`
 - Automated test suite (`tests/`)
+- Phase 4b: full clinical deployment inference script
+
+---
+
+## [1.1.0] — 2026-08-25 (Phase 4a v2.0 — Image + WBC Dual Fusion)
+
+### Added
+- **Phase 4a v2.0** `Phase-4a-image_wbc_dual_fusion_V1.0.ipynb` fully improved (49 cells):
+  - **FiLM Conditioning** (`FiLMGenerator`): WBC(1) → γ(1024) + β(1024) modulates DenseNet image features channel-wise
+  - **LR Warm-up** (3-epoch linear ramp) before CosineAnnealingLR — stabilises FiLM generator early training
+  - **Progressive Unfreeze** at epoch 10: last DenseBlock4 + CBAM unfreezes at `lr=5e-5` (same strategy as Phase 2v2 +3.8% AUC)
+  - **Extended WBC EDA**: KDE overlay, Mann-Whitney U statistical test (p-value), violin + CDF plots
+  - **Test-Time Augmentation (TTA)**: 8-view safe augmentation for robust AUC
+  - **PR Curve + Average Precision**: more informative for class-imbalanced datasets
+  - **Bootstrap 95% CI** (n=1000) on AUC, Sensitivity, Specificity — publication standard
+  - **FiLM Gamma Channel Analysis**: top-20 image channels amplified/suppressed by high vs normal WBC
+  - **WBC Ablation Study**: image-only forward pass (WBC=neutral) quantifies WBC modality contribution (ΔAUC)
+  - **Calibration Curve + ECE** (Expected Calibration Error): reliability of clinical probability outputs
+  - **Full artefact saving**: `best_p4a_model.pth`, `phase4a_scaler.pkl`, `training_history.json`, `phase4a_results.json`
+
+### Clinical Motivation
+- Phase 4a is the only model in the series that operates **at ED triage** (<15 min)
+- Requires only: CXR image + WBC from routine CBC — **no radiology report, no NLP pipeline, no BERT**
+- Trainable parameters: ~0.87M (vs ~18M for Phase 3c with BERT)
 
 ---
 
