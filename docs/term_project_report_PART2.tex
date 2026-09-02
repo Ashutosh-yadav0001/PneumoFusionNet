@@ -14,12 +14,17 @@
 \tcbuselibrary{skins}
 \definecolor{successgrn}{RGB}{39,174,96}
 \definecolor{alertred}{RGB}{192,57,43}
-\definecolor{tealblue}{RGB}{0,128,128}
 
-% Tighten vertical spacing globally
-\setlength{\parskip}{1pt}
-\setlength{\topsep}{2pt}
+% ── Global spacing tightening ──────────────────────────────
+\setlength{\parskip}{1.5pt}
+\setlength{\topsep}{1pt}
 \setlength{\partopsep}{0pt}
+\setlength{\itemsep}{1pt}
+\setlength{\textfloatsep}{6pt plus 2pt minus 2pt}
+\setlength{\floatsep}{5pt plus 2pt minus 2pt}
+\setlength{\intextsep}{5pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{1pt}
 
 \def\x{{\mathbf x}}
 \def\L{{\cal L}}
@@ -47,19 +52,17 @@ via CXR Image, Radiology Text, and WBC Fusion}
 This report presents \textbf{PneumoFusionNet Part~2}, a progressive multimodal
 deep learning study for pneumonia detection on the restricted
 \textbf{MIMIC-CXR}~\cite{johnson2019mimic} dataset.
-Starting from the Part~1 conclusion that image-only DenseNet-121 plateaus at
-AUC\,$\approx$\,0.826, Part~2 fuses three clinical modalities.
-\textbf{Phase~2} adds leakage-free radiology text (FINDINGS\,+\,HISTORY)
+Building on the Part~1 finding that image-only DenseNet-121 plateaus at
+AUC\,$\approx$\,0.826, Part~2 progressively adds clinical modalities.
+\textbf{Phase~2} fuses leakage-free radiology text (FINDINGS\,+\,HISTORY)
 via Bio\_ClinicalBERT~\cite{alsentzer2019bert} and 8-head cross-attention,
-reaching \textbf{AUC\,=\,0.949}, Sensitivity\,=\,91.4\%.
-\textbf{Phase~3c} --- the primary contribution of this report --- is a
-\emph{minimal} triple fusion model using only a single biomarker:
+reaching \textbf{AUC\,=\,0.949} and Sensitivity\,=\,91.4\%.
+\textbf{Phase~3c}---the primary contribution---is a minimal triple-fusion model:
 CXR image\,+\,radiology text\,+\,\textbf{WBC count} from routine CBC.
-This clinically practical combination achieves \textbf{AUC\,=\,0.9711},
-\textbf{Sensitivity\,=\,92.25\%}, and \textbf{Specificity\,=\,93.59\%}
-on a 3,763-image scale-up cohort---adding \textbf{+2.51\% AUC} over the
-text-only model while requiring only one additional lab value.
-
+This combination achieves \textbf{AUC\,=\,0.9711}, \textbf{Sensitivity\,=\,92.25\%},
+and \textbf{Specificity\,=\,93.59\%} on 3,763 PA images, adding \textbf{+2.51\% AUC}
+over the text-only model while requiring only one additional lab value available
+within 15 minutes of ED arrival.
 \textbf{Index Terms---} Multimodal Deep Learning, MIMIC-CXR, Bio\_ClinicalBERT,
 Cross-Attention, WBC Fusion, Pneumonia Detection.
 \end{abstract}
@@ -73,32 +76,20 @@ Pneumonia Detection, CXR, Radiology Text, WBC, Multimodal Fusion, MIMIC-CXR
 % ==========================================================
 
 Pneumonia causes $\sim$2.5 million deaths annually~\cite{who2023}.
-Chest radiography (CXR) is the primary diagnostic tool, yet visual ambiguity
-means even experienced radiologists disagree on 20--30\% of borderline cases.
-AI systems trained on images alone hit a performance ceiling because the image
-cannot capture the patient's \emph{systemic} response to infection.
-Two additional sources of clinical information are available at the bedside:
-
-\begin{enumerate}[noitemsep,leftmargin=*,topsep=2pt]
-  \item \textbf{Radiology reports}: the radiologist's free-text description
-    of FINDINGS (what is seen) and HISTORY (why the patient was imaged).
-  \item \textbf{WBC count}: from a routine Complete Blood Count (CBC),
-    available within 15 minutes of ED admission---the canonical infection biomarker.
-\end{enumerate}
-
-\begin{tcolorbox}[colback=red!4!white,colframe=red!55!black,
-  title=Anti-Leakage Protocol,fonttitle=\small\bfseries,
-  top=3pt,bottom=3pt,left=4pt,right=4pt]
-\small
-Every radiology report ends with \textbf{IMPRESSION} stating the diagnosis.
-If the model sees this, it reads the answer---not a real AI.\\
-\textcolor{successgrn}{\checkmark}~\textbf{FINDINGS + HISTORY} --- retained.\\
-\textcolor{alertred}{\textbf{$\times$}~\textbf{IMPRESSION}} --- stripped completely.
-\end{tcolorbox}
-
-Part~2 builds a three-stage progressive fusion pipeline on
-MIMIC-CXR-JPG~v2.0.0 (PhysioNet DUA + CITI required), adding one modality
-at a time to enable clean ablation:
+Chest radiography (CXR) is the primary diagnostic tool, yet AI systems
+trained on images alone hit a performance ceiling because the image cannot
+capture the patient's \emph{systemic} response to infection.
+Two complementary sources of clinical information bridge this gap.
+\textbf{Radiology reports} contain the radiologist's free-text FINDINGS
+(what is seen) and HISTORY (why the patient was imaged)---but not IMPRESSION,
+which states the diagnosis and must be stripped to prevent label leakage
+(model reading the answer rather than learning to diagnose).
+\textbf{WBC count} from a routine Complete Blood Count (CBC) is the canonical
+infection biomarker, available within 15 minutes of ED admission, long before
+a full lab panel or radiology report is written.
+Part~2 builds a three-stage progressive fusion pipeline on restricted
+MIMIC-CXR-JPG~v2.0.0 (PhysioNet DUA + CITI training required), adding one
+modality at a time for clean ablation:
 Phase~1 (image only) $\to$ Phase~2 (image\,+\,text) $\to$
 Phase~3c (image\,+\,text\,+\,WBC).
 
@@ -107,36 +98,16 @@ Phase~3c (image\,+\,text\,+\,WBC).
 % ==========================================================
 
 All experiments use \textbf{MIMIC-CXR-JPG~v2.0.0}~\cite{johnson2019mimic}
-(Beth Israel Deaconess Medical Centre, 2011--2016).
-Images are filtered to \textbf{PA~(Posteroanterior) view only}---the
-standard diagnostic frontal view---to eliminate the AP/Lateral confound
-identified in Part~1.
-WBC counts are extracted from \textbf{MIMIC-IV}~\cite{johnson2023mimiciv}
-\texttt{labevents} and linked to each CXR study by \texttt{subject\_id}.
-
-\begin{table}[h]
-\centering\small
-\caption{Scale-up dataset used for all Part~2 experiments.}
-\label{tab:dataset}
-\begin{tabular}{ll}
-\toprule
-\textbf{Property} & \textbf{Value}\\
-\midrule
-Total images     & 3,763 (PA-only)\\
-Normal           & 1,872 \quad Pneumonia: 1,891\\
-Balance          & 1:1 (stratified by patient)\\
-Split (patient-level) & Train 2,633 / Val 565 / Test 565\\
-Text input       & FINDINGS + HISTORY (IMPRESSION stripped)\\
-WBC coverage     & 100\% (imputed with train-median where missing)\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{Anti-leakage split}: \texttt{GroupShuffleSplit} by \texttt{subject\_id}
-guarantees zero patient overlap across train, validation, and test sets.
-Missing WBC values are filled with the \emph{training-set median only};
-the same median is applied to validation and test---no test information
-leaks into imputation.
+(Beth Israel Deaconess Medical Centre, 2011--2016), filtered to
+\textbf{PA-view only} to eliminate the AP/Lateral view confound identified
+in Part~1. WBC counts are extracted from \textbf{MIMIC-IV}~\cite{johnson2023mimiciv}
+\texttt{labevents} and linked to each study by \texttt{subject\_id}.
+The scale-up dataset contains \textbf{3,763 images} (1,872 Normal; 1,891 Pneumonia;
+1:1 balance), split patient-level by \texttt{GroupShuffleSplit} into
+Train~2,633 / Val~565 / Test~565, guaranteeing zero patient overlap.
+Missing WBC values ($\sim$15\%) are imputed with the \emph{training-set median only};
+the same median is applied to validation and test to prevent leakage.
+Text input is FINDINGS\,+\,HISTORY; IMPRESSION is stripped in every case.
 
 % ==========================================================
 \section{Architecture}
@@ -144,38 +115,33 @@ leaks into imputation.
 
 \subsection{Phase~1 — Image Only (Baseline)}
 
-DenseNet-121~\cite{huang2017densenet} pretrained on $>$500K CXRs
-(\texttt{torchxrayvision}~\cite{cohen2022torchxrayvision},
-\texttt{densenet121-res224-all} weights) is augmented with a
-\textbf{CBAM}~\cite{woo2018cbam} (Channel + Spatial Attention) module
-and trained with 5-fold GroupKFold cross-validation, TTA (10 views),
-and Focal Loss~\cite{lin2017focal}.
-The Phase~1 best-fold encoder (1024-d feature vector, \textbf{frozen}) is
-reused in all subsequent phases.
+DenseNet-121~\cite{huang2017densenet} pretrained on $>$500K CXRs via
+TorchXRayVision~\cite{cohen2022torchxrayvision} is augmented with
+CBAM~\cite{woo2018cbam} (channel + spatial attention).
+Training uses 5-fold GroupKFold cross-validation, 10-view TTA, and
+Focal Loss~\cite{lin2017focal} ($\gamma$\,=\,2.0).
+The best-fold encoder output (1024-d, \textbf{frozen}) is reused in all subsequent phases.
 
 \subsection{Phase~2 — Image + Radiology Text}
 
-Bio\_ClinicalBERT~\cite{alsentzer2019bert} (pretrained on MIMIC-III notes)
-encodes the leakage-free report text into a sequence of 768-d token embeddings.
-The last 2 BERT layers are fine-tuned at \texttt{lr=1e-5} to adapt
-to the pneumonia classification task without catastrophic forgetting.
-An 8-head \textbf{cross-attention} module lets the frozen image features
-\emph{query} the full BERT token sequence:
+Bio\_ClinicalBERT~\cite{alsentzer2019bert} encodes leakage-free report text
+into 768-d token embeddings with the last two layers fine-tuned at lr\,=\,1e-5.
+An 8-head cross-attention module lets image features \emph{query} the full
+token sequence rather than a single \texttt{[CLS]} summary:
 \vspace{-2pt}
 \begin{equation}
-  \mathbf{c} = \mathrm{softmax}\!\left(\frac{\mathbf{Q}_{\mathrm{img}}\mathbf{K}_{\mathrm{txt}}^\top}{\sqrt{d_k}}\right)\mathbf{V}_{\mathrm{txt}},
-  \quad d_k = 64 \;(512\text{ heads}/8)
+  \mathbf{c} = \mathrm{softmax}\!\left(\frac{\mathbf{Q}_{\mathrm{img}}
+  \mathbf{K}_{\mathrm{txt}}^\top}{\sqrt{d_k}}\right)\mathbf{V}_{\mathrm{txt}},
+  \quad d_k = 64
   \label{eq:crossattn}
 \end{equation}
-The attended text vector $\mathbf{c} \in \mathbb{R}^{512}$ captures the
-specific report tokens most relevant to the image features, rather than
-relying on a single \texttt{[CLS]} summary token.
-Training uses Focal Loss~\cite{lin2017focal} ($\gamma$\,=\,2.0) and
-Mixup~\cite{zhang2018mixup} on embeddings ($\alpha$\,=\,0.2).
+Training uses Focal Loss ($\gamma$\,=\,2.0) and embedding-level
+Mixup~\cite{zhang2018mixup} ($\alpha$\,=\,0.2) with separate learning rates
+(BERT\,=\,1e-5, fusion head\,=\,2e-4).
 
 \subsection{Phase~3c — Image + Text + WBC (Primary Model)}
 
-\begin{figure}[h]
+\begin{figure}[t]
 \centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[
@@ -190,75 +156,52 @@ Mixup~\cite{zhang2018mixup} on embeddings ($\alpha$\,=\,0.2).
   arr/.style={-Stealth,thick,gray!60},
   lbl/.style={font=\small\bfseries\sffamily,text=gray!55}
 ]
-% ── Image branch  (x = 0) ─────────────────────────
-\node[imgbox](img)  at (0,4.0){CXR Image (PA)};
-\node[imgbox](dn)   at (0,3.2){DenseNet+CBAM};
-\node[imgbox](iemb) at (0,2.4){\textbf{1024-d} frozen};
-
-% ── Text branch   (x = 2.3) ───────────────────────
-\node[txtbox](rep)  at (2.3,4.0){Report Text};
-\node[txtbox](bert) at (2.3,3.2){ClinicalBERT};
-\node[txtbox](temb) at (2.3,2.4){\textbf{768-d tokens}};
-
-% ── WBC branch    (x = 4.6) ───────────────────────
-\node[wbcbox](wbc1) at (4.6,4.0){WBC count};
-\node[wbcbox](wbc2) at (4.6,3.2){MLP 1$\to$128$\to$64};
-\node[wbcbox](wbc3) at (4.6,2.4){\textbf{64-d}};
-
-% ── Cross-attention (centres between img and text) ─
-\node[fusbox,minimum width=3.2cm](ca) at (1.15,1.5)
-  {CrossAttn \textbf{512-d}};
-
-% ── Concat ────────────────────────────────────────
-\node[fusbox,minimum width=5.3cm](cc) at (2.3,0.65)
-  {concat[\,1024\!+\!512\!+\!64\,=\,\textbf{1600-d}\,]};
-
-% ── Classifier ────────────────────────────────────
-\node[fusbox,minimum width=5.3cm](cls) at (2.3,-0.2)
-  {MLP 1600$\!\to$512$\!\to$128$\!\to$2 ~~ $\Rightarrow$ Dx};
-
-% ── Arrows ────────────────────────────────────────
-\draw[arr](img)--(dn);   \draw[arr](dn)--(iemb);
-\draw[arr](rep)--(bert); \draw[arr](bert)--(temb);
-\draw[arr](wbc1)--(wbc2);\draw[arr](wbc2)--(wbc3);
-
+\node[imgbox](img)  at (0,4.0)   {CXR Image (PA)};
+\node[imgbox](dn)   at (0,3.2)   {DenseNet+CBAM};
+\node[imgbox](iemb) at (0,2.4)   {\textbf{1024-d} frozen};
+\node[txtbox](rep)  at (2.3,4.0) {Report Text};
+\node[txtbox](bert) at (2.3,3.2) {ClinicalBERT};
+\node[txtbox](temb) at (2.3,2.4) {\textbf{768-d tokens}};
+\node[wbcbox](wbc1) at (4.6,4.0) {WBC count};
+\node[wbcbox](wbc2) at (4.6,3.2) {MLP 1$\to$128$\to$64};
+\node[wbcbox](wbc3) at (4.6,2.4) {\textbf{64-d}};
+\node[fusbox,minimum width=3.2cm](ca)  at (1.15,1.5){CrossAttn \textbf{512-d}};
+\node[fusbox,minimum width=5.3cm](cc)  at (2.3,0.65){concat[\,1024+512+64\,=\,\textbf{1600-d}\,]};
+\node[fusbox,minimum width=5.3cm](cls) at (2.3,-0.2){MLP 1600$\to$512$\to$128$\to$2 $\Rightarrow$ Dx};
+\draw[arr](img)--(dn);    \draw[arr](dn)--(iemb);
+\draw[arr](rep)--(bert);  \draw[arr](bert)--(temb);
+\draw[arr](wbc1)--(wbc2); \draw[arr](wbc2)--(wbc3);
 \draw[arr](iemb.south)--++(0,-0.18)-|(ca.north west);
 \draw[arr](temb.south)--++(0,-0.18)-|(ca.north east);
 \draw[arr](ca)--(cc);
 \draw[arr](iemb.south)--++(0,-0.48)-|(cc.north west);
 \draw[arr](wbc3.south)--++(0,-0.58)-|(cc.north east);
 \draw[arr](cc)--(cls);
-
-% ── Branch labels ─────────────────────────────────
 \node[lbl,above=0.04cm of img] {Image};
 \node[lbl,above=0.04cm of rep] {Text (leakage-free)};
 \node[lbl,above=0.04cm of wbc1]{WBC (CBC)};
 \end{tikzpicture}%
-}% end resizebox
+}
 \vspace{-4pt}
-\caption{Phase~3c: frozen DenseNet+CBAM image features (1024-d) query
-leakage-free ClinicalBERT tokens via 8-head cross-attention (512-d),
-then concatenate with the WBC embedding (64-d) for a 1600-d joint
-representation fed to the MLP classifier (Dx\,=\,Normal/Pneumonia).}
+\caption{Phase~3c: frozen DenseNet+CBAM (1024-d) queries ClinicalBERT tokens
+via cross-attention (512-d), then concatenates with WBC embedding (64-d)
+for a 1600-d joint representation. Dx\,=\,Normal/Pneumonia.}
 \label{fig:p3c}
 \end{figure}
 
-Phase~3c adds a \textbf{WBC branch} on top of the Phase~2 cross-attention backbone.
-A two-hidden-layer MLP (\texttt{WBCMetadataEncoder}: $1\!\to\!128\!\to\!128\!\to\!64$)
-projects the scalar WBC count into a 64-d embedding.
-The three branch outputs are concatenated:
+A \texttt{WBCMetadataEncoder} MLP ($1\!\to\!128\!\to\!128\!\to\!64$) projects
+the scalar WBC count into a 64-d non-linear embedding.
+The three branch outputs are concatenated and classified:
 \vspace{-2pt}
 \begin{equation}
-  \mathbf{z} = [\,\mathbf{v}_{\mathrm{img}} \,\|\, \mathbf{c}_{\mathrm{cross}} \,\|\,
-  \mathbf{e}_{\mathrm{wbc}}\,] \in \mathbb{R}^{1600}
+  \mathbf{z} = [\,\mathbf{v}_{\mathrm{img}} \,\|\,
+  \mathbf{c}_{\mathrm{cross}} \,\|\, \mathbf{e}_{\mathrm{wbc}}\,]
+  \in \mathbb{R}^{1600}
   \label{eq:p3c}
 \end{equation}
-The Phase~2v2 cross-attention weights are \textbf{warm-started} into Phase~3c,
-preserving the learned image-text alignment. Only the WBC encoder and fusion
-MLP are initialised from scratch.
-Training uses Focal Loss ($\gamma$\,=\,2.0) and triple-branch
-Mixup~\cite{zhang2018mixup} ($\alpha$\,=\,0.2) with separate learning rates:
-BERT $=$ 1e-5, fusion/WBC $=$ 2e-4 / 1e-3.
+Phase~2v2 cross-attention weights are \textbf{warm-started} into Phase~3c,
+preserving learned image-text alignment.
+Separate learning rates are used: BERT\,=\,1e-5, fusion\,=\,2e-4, WBC MLP\,=\,1e-3.
 
 % ==========================================================
 \section{Results}
@@ -267,114 +210,84 @@ BERT $=$ 1e-5, fusion/WBC $=$ 2e-4 / 1e-3.
 \subsection{Progressive Ablation}
 
 Table~\ref{tab:ablation} presents the clean one-modality-at-a-time ablation
-across all three phases on the 3,763-image scale-up dataset
-($N_{\mathrm{test}}$\,=\,565, balanced, patient-level split).
-All metrics at Youden-J optimal threshold.
+on the 3,763-image scale-up test set ($N$\,=\,565, balanced, patient-level split),
+evaluated at the Youden-J optimal threshold.
 
 \begin{table}[h]
 \centering\small
-\caption{Progressive ablation: one modality added per phase.
-All results on scaleup test set ($N$\,=\,565). Youden-J threshold.}
+\caption{One-modality-at-a-time ablation on scaleup test set ($N$\,=\,565).}
 \label{tab:ablation}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{llcccc}
 \toprule
 \textbf{Phase} & \textbf{Modalities} & \textbf{AUC} & \textbf{Sens.} & \textbf{Spec.} & \textbf{Acc.}\\
 \midrule
-Phase~1  & Image only             & 0.8258 & 71.0\% & ---   & 76.3\%\\
-Phase~2v2 & Image + Text          & 0.9460 & 86.6\% & 89.1\% & 87.8\%\\
-\textbf{Phase~3c} & \textbf{Image + Text + WBC} & \textbf{0.9711} & \textbf{92.25\%} & \textbf{93.59\%} & \textbf{92.92\%}\\
+Phase~1   & Image only              & 0.826  & 71.0\% & ---    & 76.3\%\\
+Phase~2v2 & Image + Text            & 0.946  & 86.6\% & 89.1\% & 87.8\%\\
+\textbf{Phase~3c} & \textbf{Image + Text + WBC} & \textbf{0.971} & \textbf{92.3\%} & \textbf{93.6\%} & \textbf{92.9\%}\\
 \midrule
-\multicolumn{2}{l}{\textit{Gain: Phase~1 $\to$ Phase~3c}}
-  & $+0.145$ & $+21.25\%$ & --- & $+16.6\%$\\
-\multicolumn{2}{l}{\textit{Gain: Phase~2 $\to$ Phase~3c (adding WBC)}}
-  & $\mathbf{+0.025}$ & $\mathbf{+5.65\%}$ & $\mathbf{+4.5\%}$ & $\mathbf{+5.1\%}$\\
+\multicolumn{2}{l}{\textit{Gain Ph.1\,$\to$\,Ph.3c}} & $+0.145$ & $+21.3\%$ & --- & $+16.6\%$\\
+\multicolumn{2}{l}{\textit{Gain Ph.2\,$\to$\,Ph.3c (adding WBC)}} & $\mathbf{+0.025}$ & $\mathbf{+5.7\%}$ & $\mathbf{+4.5\%}$ & $\mathbf{+5.1\%}$\\
 \bottomrule
 \end{tabular}%
 }
 \end{table}
 
-\begin{tcolorbox}[colback=successgrn!5!white,colframe=successgrn!50!black,
-  title=Key Result: One WBC Value Adds +2.5\% AUC,fonttitle=\small\bfseries,
-  top=3pt,bottom=3pt,left=4pt,right=4pt]
-\small
-Adding a single WBC count from routine CBC to the image+text model improves:
-\begin{itemize}[noitemsep,topsep=1pt,leftmargin=*]
-  \item AUC: $0.946 \to \mathbf{0.971}$ \quad ($+2.51\%$)
-  \item Sensitivity: $86.6\% \to \mathbf{92.25\%}$ \quad ($+5.65\%$)
-  \item Specificity: $89.1\% \to \mathbf{93.59\%}$ \quad ($+4.49\%$)
-\end{itemize}
-\end{tcolorbox}
+Adding a single WBC value to the image+text model improves AUC by \textbf{+2.51\%},
+Sensitivity by \textbf{+5.7\%}, and Specificity by \textbf{+4.5\%}---all with
+one extra lab result available in 15 minutes.
 
 \subsection{Threshold Analysis}
 
-The model is evaluated at three decision thresholds to support different
-clinical deployment scenarios:
-
 \begin{table}[h]
 \centering\small
-\caption{Phase~3c threshold analysis ($N_{\mathrm{test}}$\,=\,565).}
+\caption{Phase~3c at three clinical decision thresholds ($N$\,=\,565).}
 \label{tab:thresh}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lccc}
 \toprule
 \textbf{Threshold Strategy} & \textbf{Accuracy} & \textbf{Sensitivity} & \textbf{Specificity}\\
 \midrule
-Default (0.50)     & 92.39\% & \textbf{94.72\%} & 90.04\%\\
-Youden-J (0.559)   & \textbf{92.92\%} & 92.25\% & \textbf{93.59\%}\\
-Clinical ($\geq$90\% Sens, 0.575) & 92.74\% & 91.20\% & 94.31\%\\
+Default (0.50)            & 92.4\% & \textbf{94.7\%} & 90.0\%\\
+Youden-J (0.559)          & \textbf{92.9\%} & 92.3\% & \textbf{93.6\%}\\
+Clinical ($\geq$90\% Sens, 0.575) & 92.7\% & 91.2\% & 94.3\%\\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
-The \textbf{default threshold (0.50)} gives the highest raw sensitivity (94.72\%)
---- safest for screening, where missing a sick patient is the critical risk.
-The \textbf{Youden-J threshold (0.559)} gives the best balanced accuracy (92.92\%).
-The \textbf{clinical threshold (0.575)} is tuned to maintain $\geq$90\% sensitivity
-while maximising specificity for a deployment setting.
+The default threshold (0.50) gives the highest raw sensitivity (94.7\%)---safest
+for screening. Youden-J gives the best balance. The clinical threshold maintains
+$\geq$90\% sensitivity while pushing specificity to 94.3\%.
 
-\subsection{Comparison Against Full 17-Feature Model}
-
-A key question is whether the minimal WBC-only fusion matches the full
-17-feature metadata model (Phase~3 full), which used 17 clinical features
-including demographics, full lab panel, and vitals.
+\subsection{WBC-Only vs.\ Full 17-Feature Model}
 
 \begin{table}[h]
 \centering\small
-\caption{WBC-only vs.\ full 17-feature Phase~3 (Youden-J).}
+\caption{Phase~3c (1 feature) vs.\ full 17-feature model (Youden-J).}
 \label{tab:compare}
 \resizebox{\columnwidth}{!}{%
 \begin{tabular}{llccc}
 \toprule
 \textbf{Model} & \textbf{Metadata} & \textbf{AUC} & \textbf{Sens.} & \textbf{Spec.}\\
 \midrule
-Phase~2v2     & None (img+text only)       & 0.946  & 86.6\% & 89.1\%\\
-Phase~3c      & WBC only (1 feature)       & 0.9711 & 92.25\% & 93.59\%\\
-Phase~3 full  & All 17 features            & 0.9890 & 89.1\%  & 94.3\%\\
+Phase~2v2      & None (img+text only)  & 0.946  & 86.6\% & 89.1\%\\
+Phase~3c       & WBC only (1 feature)  & 0.971  & \textbf{92.3\%} & 93.6\%\\
+Phase~3 full   & All 17 features       & \textbf{0.989}  & 89.1\% & \textbf{94.3\%}\\
 \midrule
-\multicolumn{2}{l}{\textit{3c vs.\ full-17 gap}} & $-0.018$ & $+3.15\%$ & $-0.71\%$\\
+\multicolumn{2}{l}{\textit{3c vs.\ full-17 gap}} & $-0.018$ & $+3.2\%$ & $-0.7\%$\\
 \bottomrule
 \end{tabular}%
 }
 \end{table}
 
 Phase~3c achieves \textbf{92.5\% of the full model's AUC gain} using only
-\textbf{1 of 17 features}. Crucially, Phase~3c has \emph{higher sensitivity}
-than the full 17-feature model (92.25\% vs.\ 89.1\%), meaning it misses fewer
-pneumonia patients. The full model achieves slightly higher specificity,
-but at the cost of requiring a complete lab panel.
-
-\begin{tcolorbox}[colback=blue!4!white,colframe=blue!40!black,
-  title=Clinical Practicality Argument,fonttitle=\small\bfseries,
-  top=3pt,bottom=3pt,left=4pt,right=4pt]
-\small
-\textbf{Full 17-feature model} requires: creatinine, CRP, albumin,
-alk.\ phos., hemoglobin, hematocrit, full vitals panel --- typically
-available only after 1--4 hours of ED workup.\\[2pt]
-\textbf{Phase~3c (WBC only)} requires: CXR image + radiology report +
-WBC from routine CBC --- all available within 15--30 minutes of ED arrival.\\[2pt]
-\textbf{Conclusion}: Phase~3c closes 92.5\% of the performance gap
-at a fraction of the clinical data cost.
-\end{tcolorbox}
+\textbf{1 of 17 features}, and it achieves \emph{higher sensitivity}
+than the full 17-feature model (92.3\% vs.\ 89.1\%)---meaning it misses
+fewer pneumonia patients.
+The full 17-feature model requires creatinine, CRP, albumin, and a complete
+vitals panel, typically available after 1--4 hours of ED workup.
+Phase~3c requires only a WBC count---available within 15--30 minutes of arrival.
 
 % ==========================================================
 \section{Discussion}
@@ -384,94 +297,55 @@ at a fraction of the clinical data cost.
 
 Radiology FINDINGS describe \emph{what the radiologist sees} on the image.
 WBC measures the patient's \emph{systemic immune response}---information
-that is invisible in any image. A consolidation on the CXR could be
-pneumonia, atelectasis, or pulmonary oedema; an elevated WBC ($>$11\,000/\textmu{}L)
-decisively favours infectious aetiology.
-The cross-attention mechanism already extracts the ``is there opacity?'' signal
-from image+text; WBC adds the ``is the body fighting an infection?'' signal,
-which is why sensitivity improves most (+5.65\%): WBC confirms the cases
-the image-text model was uncertain about.
+invisible on any image. A CXR consolidation could be pneumonia, atelectasis,
+or pulmonary oedema; an elevated WBC ($>$11\,000/\textmu{}L) decisively favours
+infectious aetiology. The cross-attention mechanism extracts the
+``is there opacity?'' signal from image and text; WBC adds the
+``is the body fighting an infection?'' signal, which is why sensitivity
+improves most (+5.7\%): it resolves the borderline cases the image-text
+model was uncertain about.
 
-\subsection{WBC Embedding: Why an MLP over a Scalar?}
+\subsection{WBC Embedding: MLP Not Scalar}
 
 A na{\"i}ve approach would concatenate the raw WBC scalar directly.
-Instead, the \texttt{WBCMetadataEncoder} ($1\!\to\!128\!\to\!128\!\to\!64$)
-projects it into a 64-d embedding. This allows the model to learn
-\emph{non-linear} thresholds: e.g., WBC\,=\,12 vs.\ 15 vs.\ 25 have
-qualitatively different clinical meanings (borderline / elevated / severely elevated),
-which a scalar concatenation cannot capture but an MLP can.
+The \texttt{WBCMetadataEncoder} ($1\!\to\!128\!\to\!128\!\to\!64$) instead learns
+\emph{non-linear} thresholds: WBC\,=\,12 vs.\ 15 vs.\ 25\,K/\textmu{}L have
+qualitatively different clinical meanings (borderline / elevated / severely elevated)
+that a raw scalar cannot encode but an MLP can.
 
 \subsection{Limitations}
 
-\begin{enumerate}[noitemsep,leftmargin=*,topsep=2pt]
-  \item \textbf{Single institution}: MIMIC-CXR is from one hospital (BIDMC).
-        Results may not generalise to hospitals with different scanner
-        protocols, patient demographics, or reporting styles.
-  \item \textbf{WBC imputation}: $\sim$15\% of WBC values were imputed
-        with training-set median. Imputed samples reduce the model's
-        advantage over text-only.
-  \item \textbf{No external validation}: the model has not been tested
-        on NIH ChestX-14 or CheXpert.
-  \item \textbf{Binary classification}: real clinical CXR reads distinguish
-        14+ pathologies; this model is pneumonia-vs-normal only.
-  \item \textbf{Data access}: MIMIC-CXR requires PhysioNet DUA + CITI
-        training. No data is redistributed with this report.
-\end{enumerate}
+Results are from a single institution (BIDMC). The model has not been tested
+on external datasets (NIH ChestX-14, CheXpert). Approximately 15\% of WBC values
+were imputed with training-set median. The task is binary (pneumonia vs.\ normal);
+real clinical reads span 14+ pathologies. All MIMIC-CXR handling complied strictly
+with the PhysioNet DUA; no data is redistributed with this report.
 
 % ==========================================================
 \section{Conclusion}
 % ==========================================================
 
-This report demonstrates that a \textbf{minimal triple-fusion model}
-(CXR image + leakage-free radiology text + WBC count) achieves strong
-clinical performance on MIMIC-CXR:
-
-\begin{table}[h]
-\centering\small
-\caption{Final Phase~3c results summary.}
-\label{tab:final}
-\begin{tabular}{lc}
-\toprule
-\textbf{Metric} & \textbf{Phase~3c Value}\\
-\midrule
-AUC-ROC         & \textbf{0.9711}\\
-Sensitivity (Youden) & \textbf{92.25\%}\\
-Specificity (Youden) & \textbf{93.59\%}\\
-Accuracy (Youden)    & \textbf{92.92\%}\\
-Test set size        & 565 patients (balanced)\\
-Dataset              & MIMIC-CXR PA, 3,763 images\\
-Extra data needed    & 1 lab value (WBC from routine CBC)\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The key finding is that \textbf{WBC is the single most impactful lab value}
-to add to an image+text model: it closes 92.5\% of the performance gap
-between text-only (AUC\,=\,0.946) and the full 17-feature system (AUC\,=\,0.989),
+This report demonstrates that a \textbf{minimal triple-fusion model}---CXR image,
+leakage-free radiology text, and a single WBC count---achieves strong clinical
+performance on a 3,763-image MIMIC-CXR cohort:
+\textbf{AUC\,=\,0.971}, Sensitivity\,=\,92.3\%, Specificity\,=\,93.6\%,
+Accuracy\,=\,92.9\% (Youden-J threshold, $N_{\mathrm{test}}$\,=\,565).
+WBC is the single most impactful lab value to add to an image+text model,
+closing \textbf{92.5\% of the performance gap} between text-only
+(AUC\,=\,0.946) and the full 17-feature system (AUC\,=\,0.989),
 while remaining available in any ED within 15 minutes.
-The full experimental journey --- from image-only AUC\,=\,0.826
-to image+text+WBC AUC\,=\,0.971 --- demonstrates that each modality
-adds complementary, medically interpretable signal.
-
-\textbf{Future Work:}
-\begin{itemize}[noitemsep,topsep=2pt,leftmargin=*]
-  \item External validation on NIH ChestX-14 and CheXpert
-  \item Bootstrap 95\% CI on all reported metrics
-  \item Prospective ED validation of the image+text+WBC pipeline
-  \item Multi-label extension to all 14 MIMIC-CXR pathologies
-\end{itemize}
-
-\textbf{Artifacts:} Code at
-\href{https://github.com/Ashutosh-yadav0001/PneumoFusionNet}%
+The full experimental journey---from image-only AUC\,=\,0.826 to
+image+text+WBC AUC\,=\,0.971---confirms that each clinical modality adds
+complementary, medically interpretable signal.
+Future work includes external validation on NIH ChestX-14 and CheXpert,
+bootstrap 95\% confidence intervals, prospective ED validation of the
+image+text+WBC pipeline, and multi-label extension to all 14 MIMIC-CXR pathologies.
+Code at \href{https://github.com/Ashutosh-yadav0001/PneumoFusionNet}%
 {\texttt{github.com/Ashutosh-yadav0001/PneumoFusionNet}};
-Phase~2 notebooks in \texttt{mimic/main/Phase-2/};
 Phase~3c notebook \texttt{Phase-3c-wbc\_only\_fusion.ipynb} in
-\texttt{mimic/main/Phase-3/};
-results in \texttt{mimic/main/outputs/Phase\_3c\_wbc\_only\_scaleup/};
-MIMIC-CXR data restricted (PhysioNet DUA + CITI required).
+\texttt{mimic/main/Phase-3/}.
 
 % ==========================================================
-\clearpage
 \small
 \begin{thebibliography}{9}
 
@@ -483,7 +357,6 @@ A.~Yadav, ``PneumoFusionNet Part~1: Data Preparation and Pilot Experiments,''
 S.~Yu et al., ``A multi-modal deep learning solution for precise pneumonia
 diagnosis: the PneumoFusion-Net model,'' \emph{Frontiers in Physiology},
 vol.~16, Art.~1512835, Mar.\ 2025.
-DOI: \href{https://doi.org/10.3389/fphys.2025.1512835}{10.3389/fphys.2025.1512835}
 
 \bibitem{rajpurkar2017chexnet}
 P.~Rajpurkar et al., ``CheXNet: Radiologist-Level Pneumonia Detection on Chest
