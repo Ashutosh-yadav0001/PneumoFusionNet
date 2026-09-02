@@ -39,8 +39,10 @@ read_nb.py
 split_data.py
 verify.py
 
-# Docs & Reports (Keep assignment submissions strictly local)
-docs/
+# Docs & Reports (Ignore large presentation media)
+docs/**/*.mp4
+docs/**/*.ppsx
+~$*.pptx
 
 # Allow mimic 1000_dataset outputs folder and contents
 !mimic/1000_dataset/outputs/
