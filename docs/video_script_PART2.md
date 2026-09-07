@@ -1,321 +1,191 @@
 # PneumoFusionNet — Part 2 Video Presentation Script
 ### IIT Guwahati | Term Project (Trimester 8) | Ashutosh Yadav (23035010693)
-### Estimated Duration: ~8–10 minutes (~40–60 sec per slide)
+### Estimated Duration: ~8–10 minutes (~35–45 sec per slide)
 
 ---
 
-## 🎬 SLIDE 1 — Title (45 sec)
+## Slide 1 — Title (45 sec)
 
-*[Show title slide. Speak clearly and confidently. Slight pause after your name.]*
+*[Show title slide. Speak clearly and at a measured pace.]*
 
-> "Hello, my name is Ashutosh Yadav, Roll Number 23035010693, from the
-> B.Sc. Data Science and Artificial Intelligence programme at IIT Guwahati.
+> "Hello, my name is Ashutosh Yadav, Roll Number 23035010693, from the B.Sc. Data Science and Artificial Intelligence programme at IIT Guwahati.
 >
-> This is Part 2 of my Term 8 project on **PneumoFusionNet** — a system for
-> detecting pneumonia by combining chest X-rays, hospital report text, and
-> a simple blood test result.
+> This is Part 2 of my Term 8 project on PneumoFusionNet — a multimodal deep learning framework for pneumonia detection using chest X-rays, radiology reports, and routine blood tests.
 >
-> In Part 1 we proved that an image-only model hits a hard ceiling at AUC 0.826.
-> Today I will show you why that ceiling exists, what we added to break it,
-> and how we reached AUC 0.971 using inputs that are already available
-> in any hospital within 30 minutes of a patient arriving."
+> In Part 1, we observed that an image-only model plateaued at AUC 0.826. Today, I will walk you through why that ceiling exists, how we addressed it using multimodal clinical data, and how we reached an AUC of 0.971 with 92% sensitivity using inputs available within 30 minutes in an emergency setting."
 
 ---
 
-## 🎬 SLIDE 2 — Where Part 1 Left Off (50 sec)
+## Slide 2 — Where Part 1 Left Off (45 sec)
 
-*[Point to the Part 1 summary box on the left, then sweep to the roadmap on the right.]*
+*[Refer to the summary on the left and the progression roadmap on the right.]*
 
-> "Let me quickly recap where Part 1 ended.
+> "To quickly recap Part 1: we implemented a DenseNet-121 architecture with CBAM attention trained on 1,989 MIMIC-CXR chest radiographs. Our best performance reached an AUC of 0.826 with 71 percent sensitivity.
 >
-> We built a DenseNet-121 model with CBAM attention on 1,989 MIMIC-CXR
-> chest X-rays. The best we could achieve was AUC 0.826 and sensitivity 71 percent.
+> The reason for this ceiling is clear: a chest radiograph shows structural opacities, but cannot reflect systemic infection or patient history. Shadows can represent pneumonia, atelectasis, or pulmonary edema.
 >
-> The reason is simple: **the X-ray only shows what the lung looks like.**
-> It cannot show whether the patient has a fever, how long they have been sick,
-> or whether their white blood cell count is elevated. These are the things a
-> real doctor uses to make the final call.
->
-> Part 2 adds two pieces of information that fill this gap —
-> the written radiology report and a WBC blood count —
-> one at a time, so we can see exactly how much each one helps."
+> In Part 2, we systematically address this ambiguity by incorporating two complementary sources: the radiologist's written observations and a routine WBC blood count."
 
 ---
 
-## 🎬 SLIDE 3 — The Anti-Leakage Rule (55 sec)
+## Slide 3 — The Anti-Leakage Rule (50 sec)
 
-*[Point to the three sections of the report box. Emphasise IMPRESSION in red.]*
+*[Point to the sample report, distinguishing FINDINGS/HISTORY from IMPRESSION.]*
 
-> "Before I talk about the model, I need to explain the most important design
-> decision in this entire project — the anti-leakage rule.
+> "A crucial methodological requirement in our text processing pipeline is the prevention of label leakage.
 >
-> Every radiology report has three sections.
-> **FINDINGS** — what the radiologist sees on the image.
-> **HISTORY** — why the patient came in.
-> **IMPRESSION** — a single line stating the diagnosis.
+> Clinical radiology reports contain three primary sections: FINDINGS, which details anatomical observations; HISTORY, which provides clinical symptoms; and IMPRESSION, which gives the radiologist's final diagnosis.
 >
-> That IMPRESSION line is the label. If we let the model read it during training,
-> it is not learning to diagnose — it is just memorising the answer. This is
-> called label leakage, and over 90 percent of multimodal papers in the
-> literature fall into this trap.
+> If a language model is trained on reports containing the IMPRESSION section, it merely memorizes the diagnostic label rather than learning to correlate findings with disease.
 >
-> We strip IMPRESSION from every single report before it touches the model.
-> Our model uses only FINDINGS and HISTORY — the same information a doctor
-> would use *before* writing the diagnosis."
+> We programmatically strip the IMPRESSION section from every report. Our models only see FINDINGS and HISTORY, strictly mirroring the information available during active clinical assessment."
 
 ---
 
-## 🎬 SLIDE 4 — Phase 2: Adding the Report (60 sec)
+## Slide 4 — Phase 2: Adding the Radiology Report (50 sec)
 
-*[Point to Phase 2v1 box first, then draw attention to the arrow down to 2v2.]*
+*[Direct attention to the progression from Version 1 concatenation to Version 2 cross-attention.]*
 
-> "Phase 2 has two versions, and the difference between them is important.
+> "In Phase 2, we integrated the leakage-free reports using Bio_ClinicalBERT.
 >
-> Version 1 was straightforward: take the image features, take a single BERT
-> summary number called the CLS token, stick them together, and classify.
-> This gave AUC 0.911. But sensitivity was only 80.6 percent —
-> it mostly just got better at identifying Normal cases, not at catching
-> actual pneumonia patients.
+> Our initial baseline, Version 1, concatenated image embeddings with the BERT CLS token, achieving an AUC of 0.911 but a modest sensitivity of 80.6%.
 >
-> So we made seven improvements for Version 2.
-> The most important one is replacing simple concatenation with
-> **8-head Cross-Attention** — instead of using one summary number from BERT,
-> we let the image look at every single word in the report.
+> In Version 2, we introduced seven technical refinements. Crucially, we replaced simple concatenation with an 8-head cross-attention module, allowing the image features to attend directly to word tokens in the text. We also unfroze the top two BERT layers, incorporated Focal Loss, and applied embedding Mixup.
 >
-> We also fine-tuned the last two BERT layers, switched to Focal Loss
-> to focus on the hard cases, and used Mixup data augmentation on the
-> embedding space. The result: AUC 0.949, sensitivity 91.4 percent.
-> That is 9 in 10 pneumonia patients correctly identified."
+> This improved sensitivity to 91.4% and AUC to 0.949."
 
 ---
 
-## 🎬 SLIDE 5 — Cross-Attention (50 sec)
+## Slide 5 — How Cross-Attention Works (45 sec)
 
-*[Point to the equation area, then to the three cards at the bottom.]*
+*[Explain the Query-Key-Value flow depicted on the slide.]*
 
-> "Let me quickly explain how cross-attention works, because it is the
-> core of Phase 2 and also of Phase 3c.
+> "Here is how our cross-attention mechanism functions:
 >
-> The image features become a **Query** — think of it as a question.
-> The report words become **Keys and Values** — think of them as possible answers.
+> The 1024-dimensional image features serve as the Query, while the 768-dimensional ClinicalBERT token representations act as Keys and Values.
 >
-> The model computes an attention score between the image query and each
-> word in the report. Words like 'consolidation', 'opacity', and 'fever'
-> get high scores. Common words like 'the' or 'patient' get low scores.
->
-> The output is a 512-dimensional weighted summary of the report that is
-> specifically tailored to what the image is showing — not a generic
-> average of all the words.
->
-> This is fundamentally different from the v1 approach of just using
-> the CLS token, and it is why sensitivity improved so dramatically."
+> By computing scaled dot-product attention, the model determines which specific words in the report relate to the visual patterns observed in the radiograph. Words describing focal abnormalities receive higher attention weight, generating a 512-dimensional text summary directly anchored to visual findings."
 
 ---
 
-## 🎬 SLIDE 6 — Phase 2 Results (40 sec)
+## Slide 6 — Phase 2 Results (40 sec)
 
-*[Point to the table row by row, ending on the scale-up row.]*
+*[Review the metrics in the table and point to the scale-up findings.]*
 
-> "Here are the Phase 2 numbers. You can see the progression clearly.
+> "Reviewing the Phase 2 metrics: adding the radiology report yields a 12.3 percentage point gain in AUC over image alone, while sensitivity increases from 71.0% to 91.4%.
 >
-> Image only: AUC 0.826.
-> Phase 2 Version 1: AUC 0.911. A gain, but sensitivity still low.
-> Phase 2 Version 2: AUC 0.949, sensitivity 91.4 percent.
->
-> We then doubled the dataset to 3,763 images and tested again.
-> AUC barely dropped — from 0.949 to 0.946. The model is not overfitting.
-> It genuinely learned the relationship between images and leakage-free text."
+> When evaluated on our expanded scale-up cohort of 3,763 radiographs, performance remained remarkably steady at 0.946 AUC and 90.3% sensitivity. This demonstrates that the model is learning generalizable multimodal associations rather than overfitting."
 
 ---
 
-## 🎬 SLIDE 7 — Phase 3c: Adding WBC (60 sec)
+## Slide 7 — Phase 3c: Adding WBC Count (55 sec)
 
-*[Trace each branch of the architecture from top to bottom, then point to the WBC explanation box.]*
+*[Walk through the three input branches and the fusion mechanism.]*
 
-> "Phase 3c is the main contribution of Part 2.
+> "Phase 3c represents our core proposed model: minimal triple fusion.
 >
-> We take the Phase 2 model — which is already strong at 0.946 AUC —
-> and add one more input: the **WBC count** from a routine Complete Blood Count.
-> This is a standard blood test. In any hospital emergency department,
-> the result is ready within 15 minutes of the patient arriving.
+> We retain the DenseNet image branch and the ClinicalBERT text branch, and introduce a third branch: the White Blood Cell count from a routine Complete Blood Count, or CBC.
 >
-> Look at the architecture. Three branches feed into the model.
-> The image goes through DenseNet and produces 1024 numbers.
-> The report goes through ClinicalBERT with cross-attention and produces 512.
-> The WBC count goes through a small 3-layer network and produces 64 numbers.
-> All three are joined into a 1600-dimensional vector and classified.
+> Rather than passing WBC as a raw scalar, we pass it through a 3-layer MLP to produce a 64-dimensional embedding. This enables the network to learn non-linear clinical thresholds—distinguishing normal counts from borderline and severe elevations.
 >
-> Why not just pass the raw WBC number directly? Because WBC of 12 thousand
-> and WBC of 25 thousand are clinically very different — borderline elevated
-> versus severely elevated. A small network can learn these thresholds
-> from the data. A raw number cannot."
+> The three representations concatenate into a 1600-dimensional vector and pass to a final classification head."
 
 ---
 
-## 🎬 SLIDE 8 — Phase 3c Results (50 sec)
+## Slide 8 — Phase 3c Results (45 sec)
 
-*[Point to the four result numbers one by one, then to the cut-off table.]*
+*[Highlight the four key metrics and discuss threshold flexibility.]*
 
-> "Here are the Phase 3c results.
+> "On the scale-up test cohort of 565 patients, Phase 3c achieved an AUC of 0.971, with 92.3% sensitivity, 93.6% specificity, and 92.9% accuracy.
 >
-> AUC: 0.971. Sensitivity: 92.3 percent. Specificity: 93.6 percent.
-> Accuracy: 92.9 percent. Tested on 565 patients from the MIMIC-CXR scale-up set.
+> Adding this single lab value provided an additional +2.5% AUC and +5.7% sensitivity over the text-augmented model.
 >
-> Adding just one WBC value to the Phase 2 model gave us plus 2.5 percent AUC,
-> plus 5.7 percent sensitivity, and plus 4.5 percent specificity.
->
-> We also tested three different cut-off strategies. The default threshold
-> gives 94.7 percent sensitivity — safest for screening, where missing
-> a sick patient is the biggest risk. The best-balance threshold gives
-> 92.9 percent accuracy with a good balance of both. The screening
-> threshold pushes specificity to 94.3 percent if reducing false alarms
-> is the priority."
+> Depending on clinical priorities, the threshold can be adjusted: the default 0.50 threshold yields 94.7% sensitivity, which is ideal for emergency screening where minimizing false negatives is paramount."
 
 ---
 
-## 🎬 SLIDE 9 — Ablation Table (45 sec)
+## Slide 9 — Ablation Study (40 sec)
 
-*[Trace down the table row by row, then point to the gain numbers at the bottom.]*
+*[Step through the ablation rows to summarize the progression.]*
 
-> "This table tells the whole story of Part 2 in four lines.
+> "Our ablation study confirms the incremental contribution of each clinical modality.
 >
-> Phase 1, image only: AUC 0.826, sensitivity 71 percent.
-> Phase 2, adding the report: AUC 0.946, sensitivity 86.6 percent.
-> Phase 3c, adding WBC: AUC 0.971, sensitivity 92.3 percent.
+> X-ray alone yields an AUC of 0.826. Adding the radiology report lifts performance to 0.946. Introducing the single WBC count further elevates the AUC to 0.971.
 >
-> The gain from text: plus 12 percentage points of AUC.
-> The gain from WBC: plus 2.5 more, from just one blood test.
->
-> Total journey: 0.826 to 0.971 — a 14.5 point improvement.
-> Every single input we added earns its place."
+> Overall, the progression from an image-only baseline to Phase 3c delivers a total gain of +14.5% in AUC and +21.3% in sensitivity."
 
 ---
 
-## 🎬 SLIDE 10 — WBC vs 17-Feature Model (55 sec)
+## Slide 10 — WBC-Only vs. Full 17-Feature Panel (50 sec)
 
-*[Point to Phase 3c vs Phase 3 full, then draw attention to the sensitivity comparison.]*
+*[Contrast Phase 3c with the full 17-feature model in terms of both metrics and turnaround time.]*
 
-> "This is the most surprising result in the whole project.
+> "A particularly important finding emerges when comparing Phase 3c against our comprehensive Phase 3 model, which uses 17 lab and vital signs.
 >
-> We also trained a Phase 3 model using all 17 available lab and vital sign
-> features — creatinine, CRP, albumin, respiratory rate, the full panel.
-> That model scores AUC 0.989.
+> While the full model reaches an AUC of 0.989, Phase 3c achieves 0.971, recovering 92.5% of that performance gain with just one biomarker.
 >
-> Our Phase 3c model, with just WBC, scores AUC 0.971.
-> The gap is only 0.018 — less than 2 percent.
->
-> But look at sensitivity. Phase 3c scores 92.3 percent.
-> The full 17-feature model scores 89.1 percent.
-> **Phase 3c catches more sick patients than the full model.**
->
-> And here is why this matters practically: those 17 lab values require
-> 1 to 4 hours to collect. WBC from a routine CBC is ready in 15 minutes.
-> Phase 3c closes 92.5 percent of the performance gap using only 1 of
-> 17 features, while being ready 3 hours faster."
+> More importantly, Phase 3c achieves higher sensitivity—92.3% compared to 89.1%—missing fewer actual pneumonia cases. Practically, a CBC test takes 15 minutes, whereas a 17-feature panel requires several hours of laboratory processing."
 
 ---
 
-## 🎬 SLIDE 11 — Why This Works Clinically (45 sec)
+## Slide 11 — Clinical Logic Behind the WBC Gain (45 sec)
 
-*[Point to the two input boxes, then to the combined output box.]*
+*[Explain the diagnostic combination of radiographic and laboratory findings.]*
 
-> "Let me explain the clinical intuition behind this result.
+> "The clinical rationale behind this improvement is clear.
 >
-> A shadow on a chest X-ray is genuinely ambiguous. It could be pneumonia,
-> a collapsed section of lung, or fluid from heart failure.
-> The radiology report helps — it tells us what the radiologist saw and
-> the patient's history. But there is still uncertainty.
+> A pulmonary opacity on a chest X-ray is visually ambiguous—it could indicate pneumonia, atelectasis, or cardiogenic edema.
 >
-> WBC resolves that uncertainty. If the WBC is above 11,000 per microlitre,
-> the body is actively fighting an infection. Combined with a shadow on
-> the X-ray, that is almost certainly pneumonia — not fluid or collapse.
->
-> Our model learns this reasoning from the data. We did not hard-code it.
-> The WBC embedding network and the cross-attention weights together
-> learned the clinical logic that doctors use."
+> An elevated WBC count above 11,000 per microliter indicates an active systemic immune response. When combined with a radiographic opacity, it strongly favors an infectious etiology. The network learns this diagnostic reasoning directly from patient data."
 
 ---
 
-## 🎬 SLIDE 12 — Limitations (40 sec)
+## Slide 12 — Limitations (40 sec)
 
-*[Point to each of the four cards.]*
+*[Walk through the four limitation points objectively.]*
 
-> "I want to be honest about what we cannot claim from this work.
+> "We must note several methodological limitations.
 >
-> First, all our data comes from one American hospital — Beth Israel
-> Deaconess Medical Centre. We do not know whether results hold
-> at Indian hospitals where TB co-infection is common.
+> First, our dataset originates from a single institution, Beth Israel Deaconess Medical Center in Boston, which may not capture international demographic diversity.
 >
-> Second, this is a binary task. Real clinical X-ray reading involves
-> 14 or more different findings, not just Normal versus Pneumonia.
+> Second, the task is formulated as binary classification, whereas real-world clinical interpretation involves multiple concurrent findings.
 >
-> Third, 15 percent of WBC values were missing and imputed with the
-> training set median — a limitation that real deployment would need to handle.
+> Third, roughly 15% of WBC values required median imputation.
 >
-> All MIMIC-CXR data handling complied with the PhysioNet Data Use Agreement
-> and CITI ethics training. No patient data is shared with this report."
+> All experiments were conducted under approved PhysioNet Data Use Agreements and CITI research ethics training."
 
 ---
 
-## 🎬 SLIDE 13 — Next Phase: Indian Data (55 sec)
+## Slide 13 — Next Phase: Validation on Indian Hospital Data (50 sec)
 
-*[Trace the roadmap from top to bottom, then point to the right box.]*
+*[Explain the planned future work in Indian clinical settings.]*
 
-> "Part 2 is done. AUC 0.971 on MIMIC-CXR. But the real test of any
-> medical model is whether it works outside the data it was trained on.
+> "For the next phase of this research, we plan to validate and fine-tune Phase 3c on chest radiographs and CBC data collected from Indian hospitals.
 >
-> For the next phase, we plan to collect chest X-ray images paired with
-> WBC counts from Indian hospitals and evaluate the Phase 3c pipeline on them.
+> In the Indian clinical context, epidemiological differences such as endemic tuberculosis alter radiographic presentation, while nutritional variation influences baseline immune markers.
 >
-> Why India specifically? The disease profile is very different from a US hospital.
-> TB co-infection changes how pneumonia appears on an X-ray. Malnutrition
-> alters how the immune system responds, which shifts WBC patterns.
-> Scanner quality and report writing style also vary significantly.
->
-> If the model holds up on Indian data, we can argue it has genuine clinical
-> value for resource-limited settings — places where waiting 4 hours for
-> a full lab panel is simply not realistic.
->
-> If it does not hold up, we fine-tune it on Indian data and try again.
-> Either way, that is where the project goes next."
+> Validating the model across varied portable and computed radiography systems will provide an honest test of its utility in resource-constrained community healthcare."
 
 ---
 
-## 🎬 SLIDE 14 — Full Project Journey (40 sec)
+## Slide 14 — Complete Project Journey (40 sec)
 
-*[Trace the timeline bar from left to right.]*
+*[Trace the timeline from Stage 0 to Phase 3c.]*
 
-> "Looking at the full project from the beginning, three lessons stand out.
+> "Looking across the complete project lifecycle:
 >
-> First: domain matters. ResNet pretrained on ImageNet fails on clinical
-> chest X-rays. DenseNet pretrained on half a million real X-rays works.
+> We progressed from initial public dataset experiments to clinical scale-up, identified the failure of generic ImageNet models, and rebuilt our foundation using domain-specific DenseNet backbones, cross-attention, and targeted lab fusion.
 >
-> Second: the anti-leakage rule is non-negotiable. Stripping IMPRESSION
-> from every report is what makes our numbers honest.
->
-> Third: one well-chosen biomarker beats many poorly-available tests.
-> WBC from a routine CBC, available in 15 minutes, closes 92 percent
-> of the gap that 17 complex lab tests close."
+> The key lessons: domain pretraining is essential, anti-leakage data preparation is mandatory, and a single targeted biomarker can achieve comparable utility to extensive lab panels."
 
 ---
 
-## 🎬 SLIDE 15 — Conclusion & Thank You (45 sec)
+## Slide 15 — Summary & Conclusion (40 sec)
 
-*[Point to the final results table, then to the 5 takeaway points one by one.]*
+*[Conclude on the final summary table and direct viewers to the GitHub repository.]*
 
-> "To summarise Part 2 of PneumoFusionNet.
+> "In summary, PneumoFusionNet Part 2 demonstrates that combining chest X-rays with leakage-free reports and a single WBC count elevates pneumonia detection from 0.826 to 0.971 AUC with 92.3% sensitivity.
 >
-> We started at AUC 0.826 with just a chest X-ray.
-> Adding leakage-free radiology report text pushed us to 0.949.
-> Adding a single WBC count pushed us to 0.971 —
-> sensitivity 92.3 percent, specificity 93.6 percent.
+> The framework requires only routine tests available within 30 minutes of emergency admission, providing a practical tool for clinical triage.
 >
-> The model only needs three things that are already available
-> in any hospital within 30 minutes: the chest X-ray, the radiologist's
-> FINDINGS and HISTORY, and a routine blood test.
->
-> The next step is to bring this to Indian hospital data and test
-> whether it holds up in a completely different clinical setting.
->
-> Thank you for listening. The full code, notebooks, and results are
-> available on GitHub at the link shown on screen."
+> The project notebooks and reproducible code are available on GitHub. Thank you."
