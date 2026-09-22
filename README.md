@@ -8,11 +8,11 @@
 [![Changelog](https://img.shields.io/badge/Changelog-v1.0.0-informational)](CHANGELOG.md)
 [![Contributing](https://img.shields.io/badge/Contributing-welcome-brightgreen)](CONTRIBUTING.md)
 
-> **PneumoFusionNet** is an explainable, multimodal deep learning framework for binary pneumonia diagnosis. Aligned with state-of-the-art medical AI literature (*Frontiers in Physiology, 2025*), the pipeline fuses high-resolution visual embeddings from chest X-rays with text representations from raw radiology reports (Bio_ClinicalBERT) and clinical metadata (demographics, vitals, lab values). 
+> **PneumoFusionNet** is an explainable, multimodal deep learning framework for binary pneumonia diagnosis. Validated on 3,763 PA-view studies from the **MIMIC-CXR** and **MIMIC-IV** databases, the pipeline progressively fuses domain-pretrained chest X-ray representations (DenseNet-121 + CBAM) with leakage-controlled clinical radiology text (Bio_ClinicalBERT via 8-head cross-attention) and a routine White Blood Cell (WBC) count.
 > 
-> 🏆 **Phase 2v2 SOTA**: **0.9490 AUC** | **91.37% Sensitivity** | **88.63% Accuracy**
+> 🏆 **Conference Main Model (Phase 3c: CXR + Text + WBC)**: **0.9711 Test AUC** | **92.25% Sensitivity** | **93.59% Specificity** | **92.92% Accuracy** (Youden-J, $N_{\text{test}}=565$). Reaches **94.72% Sensitivity** at emergency screening threshold ($\tau = 0.500$).
 > 
-> 🚀 **Phase 3 BEST**: **0.9890 AUC** | **89.1% Sensitivity** | **94.3% Specificity** | **91.7% Accuracy** (Triple Fusion, ~3,763 images)
+> 📈 **Progressive Trajectory**: **Phase 1 Image Baseline**: 0.8258 AUC $\to$ **Phase 2v2 Image + Text**: 0.9460 AUC $\to$ **Phase 3c Image + Text + WBC**: **0.9711 AUC**.
 
 ---
 
@@ -36,12 +36,12 @@
 Medical diagnosis of pneumonia using chest radiography (CXR) alone is subject to visual ambiguity and inter-observer variability. Human clinicians synthesize visual findings with clinical history, lab metrics, and radiology notes. **PneumoFusionNet** models this clinical workflow through a progressive multi-phase architecture on the restricted **MIMIC-CXR** dataset:
 
 ```
-Phase 1: Vision Backbone ──► Phase 2: Multimodal (Image + Text) ──► Phase 3: Triple Fusion (Image + Text + Lab/Vitals)
+Phase 1: Vision Backbone ──► Phase 2: Multimodal (Image + Text) ──► Phase 3c: Triple Fusion (Image + Text + 15-min WBC)
 ```
 
-1. **Phase 1 (Visual Classifier)**: Pre-trained visual backbones (ResNet50 / DenseNet-121) augmented with Global Context Spatial Attention (GCSA / CBAM), Depthwise Separable Convolutions (DSC), Contrast Limited Adaptive Histogram Equalization (CLAHE), and Test-Time Augmentation (TTA).
-2. **Phase 2 (Multimodal Cross-Attention Fusion)**: Fuses visual feature maps with domain-specific text embeddings from Bio_ClinicalBERT via 8-head Multihead Cross-Attention, optimized with Focal Loss and embedding Mixup.
-3. **Phase 3 (Triple Fusion)**: Integrates 16 clinical metadata variables (demographics, vital signs, and laboratory values from MIMIC-IV) alongside visual and textual modalities.
+1. **Phase 1 (Visual Classifier)**: Pre-trained visual backbones (DenseNet-121 via TorchXRayVision) augmented with Convolutional Block Attention Module (CBAM), Focal Loss ($\gamma=2.0$), and Test-Time Augmentation (TTA). Reaches an image-only ceiling at **0.826 AUC** (5-fold CV).
+2. **Phase 2 (Multimodal Cross-Attention Fusion)**: Fuses visual feature maps with domain-specific text embeddings from Bio_ClinicalBERT via 8-head Multihead Cross-Attention, strictly eliminating `IMPRESSION` conclusions and redacting diagnostic keywords. Jumps to **0.946 AUC** (+12.0 pp).
+3. **Phase 3c (WBC Triple Fusion — Conference Focus)**: Incorporates a single point-of-care White Blood Cell (WBC) count from routine CBC testing projected through a non-linear MLP ($1 \to 128 \to 128 \to 64$). Reaches **0.9711 AUC**, **92.25% Sensitivity**, and **93.59% Specificity**, outperforming a full 17-feature EHR panel in sensitivity while remaining deliverable within 30 minutes of emergency admission.
 
 ---
 
@@ -68,15 +68,15 @@ graph TD
         CrossAttn --> FusedEmb[512-d Multimodal Vector]
     end
 
-    subgraph Modality 3: Clinical Metadata Branch (Phase 3)
-        ClinicalData[16 Clinical Features\nVitals + Labs + Demographics] --> MetaMLP[Metadata MLP Encoder]
-        MetaMLP --> MetaEmb[64-d Metadata Embedding]
+    subgraph Modality 3: Laboratory Branch (Phase 3c / Main Model)
+        WBCData["White Blood Cell Count (WBC)\nRoutine 15-min CBC Scalar"] --> MetaMLP["MLP Encoder\n(1 -> 128 -> 128 -> 64)"]
+        MetaMLP --> MetaEmb[64-d WBC Embedding]
     end
 
     subgraph Decision Head
-        FusedEmb & MetaEmb --> ConcatLayer[Feature Concatenation]
-        ConcatLayer --> FocalHead[Classification MLP Head\nFocal Loss gamma=2.0]
-        FocalHead --> Output[Binary Pneumonia Classifier]
+        ImgEmb & FusedEmb & MetaEmb --> ConcatLayer["Feature Concatenation\n[1024 + 512 + 64] = 1600-d Vector"]
+        ConcatLayer --> FocalHead["Classification Head (MLP)\n1600 -> 512 -> 128 -> 2\nFocal Loss gamma=2.0"]
+        FocalHead --> Output[Normal / Pneumonia]
         FocalHead --> Explain[Grad-CAM Heatmap Visualization]
     end
 ```
@@ -106,30 +106,44 @@ To ensure complete diagnostic integrity, our pipeline enforces strict on-the-fly
 
 All experiments were systematically evaluated using reproducible seeds (`SEED=42`) and zero-patient-leakage splits (`GroupKFold` / stratified splits).
 
-### Master Experimental Benchmark
+### 🏆 Primary Scale-Up Benchmark (3,763 PA Images — Conference Paper Table I)
 
-| Phase / Model | Modality | Key Technical Enhancements | Test AUC | Accuracy | Sensitivity | Specificity | Notes |
+Evaluated with strict zero-patient-leakage splitting on the standardized scale-up cohort:
+
+| Phase / Model | Modality | Technical Architecture | Test AUC | Accuracy | Sensitivity | Specificity | Cohort / Notes |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| **Phase 1 Baseline** | Image Only | Custom ResNet50 + GCSA (139 pilot) | 0.6667 | 76.19% | — | — | Early baseline |
-| **Phase 1.1 Balanced** | Image Only | ResNet50 + GCSA (Balanced cohort) | 0.9167 | 85.71% | — | — | Small balanced subset |
-| **Phase 1.1 Scale-Up** | Image Only | Pilot Arch (1,989 PA images) | 0.7126 | 66.21% | — | — | Raw unoptimized scaleup |
-| **Phase 1.1v4 CrossVal** | Image Only | DenseNet-121 + CBAM + CLAHE + 5-Fold + TTA | 0.8445 | 77.60% | 79.50% | 76.00% | Zero patient leakage CV |
-| **Phase 1.1v5 Advanced** | Image Only | DenseNet-121 + Batch Size 16 + Youden-J | 0.8591 | 77.90% | 76.40% | 79.30% | Peak image-only ceiling |
-| **Phase 2 v1 Concat** | Image + Text | Frozen ClinicalBERT + FINDINGS text | 0.9109 | 85.30% | 80.60% | 89.40% | +6.6% AUC jump over image |
-| **Phase 2 v2 SOTA 🏆** | **Image + Text** | **Cross-Attention + Unfrozen BERT + Focal Loss + FINDINGS+HISTORY** | **0.9490** | **88.63%** | **91.37%** | **86.30%** | ** -grade SOTA** |
-| **Phase 3 Half (~1,857)** | Image + Text + Metadata | 16 Clinical Features + Warm-start from Phase 2 | **0.9841** | **94.7%** | **94.9%** | **94.5%** | Triple Fusion |
-| **Phase 3c (WBC-Only)** | Image + Text + Metadata | 1 Clinical Feature (WBC scalar MLP) | **0.9712** | **93.1%** | **92.3%** | **94.0%** | Single lab feature ablation |
-| **Phase 3 Scaleup 🚀** | **Image + Text + Metadata** | **17 Clinical Features (~3,763 images)** | **0.9890** | **91.7%** | **89.1%** | **94.3%** | **Best overall AUC** |
+| **Phase 1 (CV Scaleup)** | CXR only | DenseNet-121 + CBAM + CLAHE + Focal Loss | **0.8258 ± 0.017** | **76.3%** | **71.0%** | **81.6%** | 5-fold GroupKFold ($N=3,763$) |
+| **Phase 2v2 (Scaleup)** | CXR + Text | Bio_ClinicalBERT (top 2 unfrozen) + 8-Head Cross-Attn | **0.9460** | **87.8%** | **86.6%** | **89.1%** | Youden-J ($\tau=0.568$, $N_{\text{test}}=582$) |
+| **Phase 3c (WBC Scaleup) 🏆** | **CXR + Text + WBC** | **Cross-Attn + 15-min POC WBC MLP ($1\to 128\to 128\to 64$)** | **0.9711** | **92.9%** | **92.25%** | **93.59%** | **Conference Focus** ($\tau=0.559$, $N_{\text{test}}=565$) |
+| **Phase 3 Full (Scaleup)** | CXR + Text + EHR | Full 17-feature EHR panel (Vitals + Labs + Demographics) | **0.9690** | **91.7%** | **89.1%** | **94.3%** | Delayed 1–4h lab panel ($N_{\text{test}}=565$) |
 
-### 🚀 Phase 2v2 Key Breakdown
+> 💡 **Key Clinical Finding**: Integrating a single point-of-care WBC count (ready in 15 minutes) achieves **0.9711 AUC** and outperforms the full 17-variable EHR panel in sensitivity (**92.25% vs. 89.08%**), enabling complete triage within 30 minutes of emergency presentation.
 
-| Technique | Architectural Action | Impact / Achievement |
-| :--- | :--- | :--- |
-| **Expanded Context** | Switched input text from `FINDINGS` $\rightarrow$ `FINDINGS` + `HISTORY` | **+3.8% AUC** (jumped to 0.9490) |
-| **Task Fine-Tuning** | Unfrozen last 2 layers of Bio_ClinicalBERT ($lr=10^{-5}$) | **Cross-modal feature alignment** |
-| **Cross-Attention** | 8-Head Multihead Attention (Image queries Text) | **+3.3% Test Accuracy** (reached 88.63%) |
-| **Focal Loss ($\gamma=2.0$)** | Replaced standard Cross-Entropy loss | **+10.8% Sensitivity** (leapt to 91.37%) |
-| **Grad-CAM Visuals** | Feature mapping on GCSA/CBAM attention layers | **Interpretable pulmonary heatmaps** |
+---
+
+### 🎯 Phase 3c Operating Threshold Analysis (Conference Paper Table II)
+
+Operating performance across different clinical deployment scenarios on the held-out test partition ($N_{\text{test}}=565$):
+
+| Strategy | Decision Threshold ($\tau$) | Accuracy | Sensitivity | Specificity | Recommended Clinical Setting |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Emergency Screening** | **0.500** | 92.4% | **94.72%** | 90.04% | ED Triage (minimise missed infections) |
+| **Youden-J (Optimal)** | **0.559** | **92.92%** | **92.25%** | **93.59%** | Balanced diagnostic decision support |
+| **Clinical Target** | **0.575** | 92.74% | 91.20% | **94.31%** | Confirmatory testing (maximise specificity) |
+
+---
+
+### 🔬 Exploratory & Development Iterations (Subset Experiments)
+
+| Phase / Notebook | Modality | Cohort Size | Test AUC | Accuracy | Sensitivity | Specificity | Notes |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Phase 1 Baseline** | Image Only | 139 pilot | 0.6667 | 76.19% | — | — | Initial feasibility pilot |
+| **Phase 1.1 Balanced** | Image Only | 1,854 balanced | 0.9167 | 85.71% | — | — | ResNet50 + GCSA |
+| **Phase 1.1 Scale-Up Pilot** | Image Only | 1,989 PA | 0.7126 | 66.21% | — | — | Raw unoptimized scaleup |
+| **Phase 1.1v5 Advanced** | Image Only | 1,989 PA | 0.8591 | 77.90% | 76.40% | 79.30% | Image-only ceiling on subset |
+| **Phase 2 v1 Concat** | Image + Text | 1,989 PA | 0.9109 | 85.30% | 80.60% | 89.40% | Frozen BERT + FINDINGS text |
+| **Phase 2 v2 Improved** | Image + Text | 1,989 PA ($N_{\text{test}}=299$) | 0.9490 | 88.63% | 91.37% | 86.25% | Subset run with unfrozen BERT |
+| **Phase 3 Half-Dataset** | Image + Text + 16 Meta | 1,857 PA ($N_{\text{test}}=398$) | 0.9841 | 94.72% | 94.94% | 94.55% | 16-feature subset benchmark |
 
 ---
 
@@ -165,9 +179,19 @@ PneumoFusionNet/
 │
 ├── docs/                                      # Research papers, presentations & documentation
 │   ├── API.md                                 # Full src/ module API reference
-│   ├── main.tex                               # IEEE Conference Paper (LaTeX source)
+│   ├── main.tex                               # Project report (LaTeX source)
 │   ├── term_project_report_FINAL.html         # Formatted HTML project report
 │   └── figures/                               # Architecture diagrams and evaluation figures
+│
+├── report Writing/                            # 📄 Conference Paper & Submission Package
+│   ├── conference_101719.tex                  # IEEE conference paper (local source)
+│   ├── paper_for_editing.txt                  # Full paper text file for editing
+│   ├── architecture.png                       # Publication architecture diagram
+│   ├── Overleaf_Upload/                       # Self-contained Overleaf project folder
+│   │   ├── main.tex                           # Overleaf main document
+│   │   ├── IEEEtran.cls                       # IEEE conference class file
+│   │   └── *.png                              # All figure assets
+│   └── PneumoFusionNet_Overleaf.zip           # Ready-to-upload Overleaf ZIP package
 │
 ├── model_experiments/                         # Early exploratory notebooks (IU X-Ray dataset)
 ├── experiment_results/                        # Saved visualisations and result artefacts
@@ -291,14 +315,15 @@ results   = compute_metrics(test_labels, test_probs, threshold=threshold)
 
 ### BibTeX Citation
 
-If you use PneumoFusionNet in your research, please cite:
+If you use PneumoFusionNet in your research or baseline comparisons, please cite our conference paper:
 
 ```bibtex
-@article{yadav2025pneumofusionnet,
-  title={PneumoFusionNet: Explainable Multimodal Deep Learning for Pneumonia Detection from MIMIC-CXR X-Rays and Clinical Reports},
+@inproceedings{yadav2026pneumofusionnet,
+  title={PneumoFusionNet: Multimodal Pneumonia Detection via Chest X-Ray, Radiology Text, and White Blood Cell Fusion},
   author={Yadav, Ashutosh},
-  journal={Department of Data Science and Artificial Intelligence, IIT Guwahati},
-  year={2025}
+  booktitle={IEEE Conference Submission},
+  year={2026},
+  organization={Mehta Family School of Data Science and Artificial Intelligence, Indian Institute of Technology Guwahati}
 }
 ```
 
