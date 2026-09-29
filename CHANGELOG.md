@@ -16,6 +16,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.1.0] — 2026-08-25 (Phase 4a v2.0 — Image + WBC Dual Fusion)
 
 ### Added
+- **Phase-IndianTriage** `Phase-IndianTriage-4feature_vitals_screening.ipynb`:
+  - 4 low-cost clinical parameters: WBC, SpO2, Respiratory Rate, Temperature
+  - IMNCI (Integrated Management of Neonatal and Childhood Illnesses) aligned risk tiering
+  - Designed for Primary Health Centers (PHCs) and Community Health Centers (CHCs) in rural India
 - **Phase 4a v2.0** `Phase-4a-image_wbc_dual_fusion_V1.0.ipynb` fully improved (49 cells):
   - **FiLM Conditioning** (`FiLMGenerator`): WBC(1) → γ(1024) + β(1024) modulates DenseNet image features channel-wise
   - **LR Warm-up** (3-epoch linear ramp) before CosineAnnealingLR — stabilises FiLM generator early training

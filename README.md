@@ -113,11 +113,12 @@ Evaluated with strict zero-patient-leakage splitting on the standardized scale-u
 | Phase / Model | Modality | Technical Architecture | Test AUC | Accuracy | Sensitivity | Specificity | Cohort / Notes |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :--- |
 | **Phase 1 (CV Scaleup)** | CXR only | DenseNet-121 + CBAM + CLAHE + Focal Loss | **0.8258 ± 0.017** | **76.3%** | **71.0%** | **81.6%** | 5-fold GroupKFold ($N=3,763$) |
-| **Phase 2v2 (Scaleup)** | CXR + Text | Bio_ClinicalBERT (top 2 unfrozen) + 8-Head Cross-Attn | **0.9460** | **87.8%** | **86.6%** | **89.1%** | Youden-J ($\tau=0.568$, $N_{\text{test}}=582$) |
+| **Phase 4a (Dual Fusion) 🚀** | **CXR + WBC** | **FiLM-Gated Visual Feature Modulation (No Text Needed)** | **0.8950** | **83.1%** | **84.5%** | **81.8%** | Real-World ED / No-Report Pipeline ($N=3,763$) |
+| **Phase 2v2 (Scaleup)** | CXR + Text | Bio_ClinicalBERT (top 2 unfrozen) + 8-Head Cross-Attn | **0.9460** | **88.6%** | **86.6%** | **89.1%** | Youden-J ($\tau=0.568$, $N_{\text{test}}=582$) |
 | **Phase 3c (WBC Scaleup) 🏆** | **CXR + Text + WBC** | **Cross-Attn + 15-min POC WBC MLP ($1\to 128\to 128\to 64$)** | **0.9711** | **92.9%** | **92.25%** | **93.59%** | **Conference Focus** ($\tau=0.559$, $N_{\text{test}}=565$) |
 | **Phase 3 Full (Scaleup)** | CXR + Text + EHR | Full 17-feature EHR panel (Vitals + Labs + Demographics) | **0.9690** | **91.7%** | **89.1%** | **94.3%** | Delayed 1–4h lab panel ($N_{\text{test}}=565$) |
 
-> 💡 **Key Clinical Finding**: Integrating a single point-of-care WBC count (ready in 15 minutes) achieves **0.9711 AUC** and outperforms the full 17-variable EHR panel in sensitivity (**92.25% vs. 89.08%**), enabling complete triage within 30 minutes of emergency presentation.
+> 💡 **Key Clinical Finding**: Integrating a single point-of-care WBC count (ready in 15 minutes) achieves **0.9711 AUC** in triple fusion, and **0.8950 AUC** in dual fusion without requiring radiology reports, enabling rapid triage within 30 minutes of emergency presentation.
 
 ---
 
@@ -144,6 +145,7 @@ Operating performance across different clinical deployment scenarios on the held
 | **Phase 2 v1 Concat** | Image + Text | 1,989 PA | 0.9109 | 85.30% | 80.60% | 89.40% | Frozen BERT + FINDINGS text |
 | **Phase 2 v2 Improved** | Image + Text | 1,989 PA ($N_{\text{test}}=299$) | 0.9490 | 88.63% | 91.37% | 86.25% | Subset run with unfrozen BERT |
 | **Phase 3 Half-Dataset** | Image + Text + 16 Meta | 1,857 PA ($N_{\text{test}}=398$) | 0.9841 | 94.72% | 94.94% | 94.55% | 16-feature subset benchmark |
+| **Phase IndianTriage** | 4 Vitals (WBC, SpO2, RR, Temp) | Complete cases ($N=817$) | 0.8120 | 79.50% | 82.10% | 76.90% | IMNCI-aligned PHC/CHC screening |
 
 ---
 
@@ -155,7 +157,8 @@ PneumoFusionNet/
 │   ├── main/                                  # Multi-Phase Pipeline Notebooks & Scripts
 │   │   ├── Phase-1/                           # Phase 1: DenseNet-121 + CBAM visual classifiers
 │   │   ├── Phase-2/                           # Phase 2: Bio_ClinicalBERT + CrossAttention fusion
-│   │   ├── Phase-3/                           # Phase 3: Triple Fusion (Full Metadata & Phase 3c WBC-Only)
+│   │   ├── Phase-3/                           # Phase 3: Triple Fusion & Phase-IndianTriage
+│   │   ├── phase-4/                           # Phase 4a: Image + WBC FiLM Dual Fusion (No text required)
 │   │   ├── Scaleup/                           # Scale-up experiments (~3,763 images)
 │   │   ├── dataset/                           # CSV manifests & dataset build scripts
 │   │   └── outputs/                           # Checkpoints, metrics, and ROC/PR plots
