@@ -159,7 +159,12 @@ PneumoFusionNet/
 │   │   ├── Phase-2/                           # Phase 2: Bio_ClinicalBERT + CrossAttention fusion
 │   │   ├── Phase-3/                           # Phase 3: Triple Fusion & Phase-IndianTriage
 │   │   ├── phase-4/                           # Phase 4a: Image + WBC FiLM Dual Fusion (No text required)
+│   │   │   └── Phase-4a-image_wbc_dual_fusion_V1.0.ipynb       # Real-World ED model (CXR + WBC only)
 │   │   ├── Scaleup/                           # Scale-up experiments (~3,763 images)
+│   │   │   ├── Phase-1.1v4-crossval_tta_PA_Scaleup.ipynb       # Phase 1 — DenseNet+CBAM 5-fold CV
+│   │   │   ├── Phase-2v2-multimodal_improved_PA_Upscaled.ipynb  # Phase 2v2 — Image+Text CrossAttn
+│   │   │   ├── Phase-3-triple_fusion_PA_11_scaleup_features.ipynb # Phase 3 — Full 17-feat fusion
+│   │   │   └── Phase-3c-wbc_only_fusion_V3.2.ipynb             # Phase 3c — WBC-Only Triple Fusion
 │   │   ├── dataset/                           # CSV manifests & dataset build scripts
 │   │   └── outputs/                           # Checkpoints, metrics, and ROC/PR plots
 │   │
