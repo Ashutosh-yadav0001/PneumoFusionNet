@@ -161,7 +161,7 @@ White Blood Cell measurements were extracted from \textbf{MIMIC-IV}~\cite{johnso
 
 \begin{figure*}[!t]
 \centering
-\includegraphics[width=0.85\textwidth]{architecture.png}
+\href{architecture.png}{\includegraphics[width=0.85\textwidth]{architecture.png}}
 \caption{\textcolor{aideep}{PneumoFusionNet Phase~3c architecture.} Three input modalities---chest X-ray, leakage-free radiology report text, and WBC blood count---flow through separate encoder branches. The image and text representations interact via 8-head cross-attention, then concatenate with the WBC embedding to form a 1{,}600-dimensional feature vector for binary classification.}
 \label{fig:architecture}
 \end{figure*}
@@ -332,14 +332,14 @@ Table~\ref{tab:sota} contextualises our results against published literature. Ou
 % ── Figures ───────────────────────────────────────────────
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\columnwidth]{p3c_roc_curve.png}
+  \href{p3c_roc_curve.png}{\includegraphics[width=\columnwidth]{p3c_roc_curve.png}}
   \caption{\textcolor{aideep}{ROC curve for Phase~3c} (CXR + Text + WBC) on held-out test set ($N$=565), achieving AUC\,=\,0.971. The three operating thresholds from Table~\ref{tab:thresholds} are marked.}
   \label{fig:roc}
 \end{figure}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\columnwidth]{p3c_full_pipeline_comparison.png}
+  \href{p3c_full_pipeline_comparison.png}{\includegraphics[width=\columnwidth]{p3c_full_pipeline_comparison.png}}
   \caption{\textcolor{aideep}{Progressive pipeline comparison} showing AUC, accuracy, sensitivity, and specificity gains across Phase~1 (CXR only), Phase~2v2 (CXR + Text), and Phase~3c (CXR + Text + WBC).}
   \label{fig:pipeline}
 \end{figure}
