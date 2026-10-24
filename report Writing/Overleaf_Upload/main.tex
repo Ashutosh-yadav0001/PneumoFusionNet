@@ -1,11 +1,14 @@
 % ==========================================================
 % PneumoFusionNet — IEEE Conference Paper
 % Author: Ashutosh Yadav, IIT Guwahati
-% Revision: v2.0 — Updated per supervisor feedback
-%   - Expanded Introduction with existing-work motivation
-%   - Full methodology detail (all equations, training params)
-%   - All results updated incl. Phase 4a (Image + WBC FiLM)
-%   - Comparison table vs. published SOTA literature
+% Revision: v2.1 — Fact-checked and corrected
+%   - Removed Phase 4a (unverified metrics)
+%   - Fixed CheXNet dataset: ChestX-ray14 (not CheXpert), AUC=0.768
+%   - Fixed Wang et al.: 0.738 is 14-disease mean, clarified
+%   - Removed Moon et al. SOTA row (metrics unverifiable for task)
+%   - Fixed WHO citation with GBD reference
+%   - Fixed TorchXRayVision training size
+%   - Fixed Yu et al. footnote (CT-based, not directly comparable)
 % ==========================================================
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
@@ -31,16 +34,15 @@
 
 % ── AI Colour Palette ────────────────────────────────────
 \usepackage{xcolor}
-\definecolor{aideep}{RGB}{26, 35, 126}       % Deep AI indigo
-\definecolor{aiaccent}{RGB}{0, 150, 136}      % Teal accent
-\definecolor{aiwarm}{RGB}{255, 87, 34}        % Warm orange
-\definecolor{aicyan}{RGB}{0, 188, 212}        % Cyber cyan
-\definecolor{aipurple}{RGB}{156, 39, 176}     % Neural purple
-\definecolor{aigreen}{RGB}{76, 175, 80}       % Success green
-\definecolor{aigold}{RGB}{255, 193, 7}        % Attention gold
-\definecolor{aisoft}{RGB}{232, 234, 246}      % Soft lavender bg
-\definecolor{aitextblue}{RGB}{13, 71, 161}    % Dark blue text
-% ── Hyperlink styling ────────────────────────────────────
+\definecolor{aideep}{RGB}{26, 35, 126}
+\definecolor{aiaccent}{RGB}{0, 150, 136}
+\definecolor{aiwarm}{RGB}{255, 87, 34}
+\definecolor{aicyan}{RGB}{0, 188, 212}
+\definecolor{aipurple}{RGB}{156, 39, 176}
+\definecolor{aigreen}{RGB}{76, 175, 80}
+\definecolor{aigold}{RGB}{255, 193, 7}
+\definecolor{aisoft}{RGB}{232, 234, 246}
+\definecolor{aitextblue}{RGB}{13, 71, 161}
 \hypersetup{
   colorlinks=true,
   linkcolor=aideep,
@@ -84,7 +86,7 @@ ashutosh.yadav@op.iitg.ac.in
 \noindent\textbf{\textcolor{aideep}{Clinical Problem:}} \textbf{Chest radiography (CXR) interpretation is constrained by severe visual overlap with atelectasis and non-infectious opacities, while imaging alone cannot quantify host systemic inflammation.}
 
 \vspace{3pt}
-\noindent\textbf{\textcolor{aideep}{Multimodal Approach:}} \textbf{We present PneumoFusionNet, a progressive multimodal framework evaluated on 3{,}763 frontal posteroanterior (PA) radiographs from MIMIC-CXR coupled with clinical notes from MIMIC-III and laboratory records from MIMIC-IV. The framework integrates a TorchXRayVision DenseNet-121 backbone augmented with a Convolutional Block Attention Module (CBAM), Bio\_ClinicalBERT token representations fused via 8-head cross-attention, and a non-linear White Blood Cell (WBC) encoder MLP ($1 \to 128 \to 128 \to 64$). Additionally, a lightweight real-world deployment variant (Phase~4a) uses Feature-wise Linear Modulation (FiLM) to condition image features directly on the WBC scalar without requiring radiology text.}
+\noindent\textbf{\textcolor{aideep}{Multimodal Approach:}} \textbf{We present PneumoFusionNet, a progressive multimodal framework evaluated on 3{,}763 frontal posteroanterior (PA) radiographs from MIMIC-CXR coupled with clinical notes from MIMIC-III and laboratory records from MIMIC-IV. The framework integrates a TorchXRayVision DenseNet-121 backbone augmented with a Convolutional Block Attention Module (CBAM), Bio\_ClinicalBERT token representations fused via 8-head cross-attention, and a non-linear White Blood Cell (WBC) encoder MLP ($1 \to 128 \to 128 \to 64$).}
 
 \vspace{3pt}
 \noindent\textbf{\textcolor{aideep}{Anti-Leakage Safeguards:}} \textbf{All diagnostic IMPRESSION sections are stripped before tokenisation and trigger keywords are redacted, ensuring zero label memorisation. Patient-level group splits guarantee zero patient overlap across all partitions.}
@@ -94,14 +96,13 @@ ashutosh.yadav@op.iitg.ac.in
 \begin{itemize}[noitemsep,topsep=1pt,leftmargin=*]
   \item \textbf{CXR Baseline (Phase~1):} AUC\,=\,0.826, Sensitivity\,=\,71.0\% (5-fold GroupKFold, $N$\,=\,3{,}763).
   \item \textbf{Image + Text (Phase~2v2):} AUC\,=\,0.946, Accuracy\,=\,87.8\% (+12.0~pp over Phase~1).
-  \item \textbf{Real-World Variant (Phase~4a, CXR + WBC only):} AUC\,=\,0.895, Sensitivity\,=\,84.5\%, deployable in \textless{}15~min with no radiology report required.
   \item \textbf{Triple Fusion (Phase~3c, Main Model):} AUC\,=\,0.971, Sensitivity\,=\,92.25\%, Specificity\,=\,93.59\% at Youden-J threshold ($\tau\!=\!0.559$). Attains 94.72\% sensitivity at emergency screening threshold ($\tau\!=\!0.500$).
 \end{itemize}
 \end{tcolorbox}
 \end{abstract}
 
 \begin{IEEEkeywords}
-Pneumonia Detection, Chest X-Ray, MIMIC-CXR, Bio\_ClinicalBERT, Cross-Attention, FiLM Conditioning, White Blood Cell, Multimodal Fusion, Medical AI, Emergency Triage
+Pneumonia Detection, Chest X-Ray, MIMIC-CXR, Bio\_ClinicalBERT, Cross-Attention, White Blood Cell, Multimodal Fusion, Medical AI, Emergency Triage
 \end{IEEEkeywords}
 
 % ==========================================================
@@ -109,20 +110,19 @@ Pneumonia Detection, Chest X-Ray, MIMIC-CXR, Bio\_ClinicalBERT, Cross-Attention,
 % ==========================================================
 \section{\textcolor{aideep}{Introduction}}
 
-Pneumonia kills approximately 2.5~million people annually and is the leading infectious cause of mortality in children under five~\cite{who2023}. Chest radiography (CXR) is the primary screening modality in both high- and low-resource clinical settings; however, solo radiographic interpretation is inherently difficult. Consolidation, ground-glass opacities, and interstitial infiltrates—the radiological hallmarks of pneumonia—overlap considerably with atelectasis, pleural effusion, pulmonary oedema, and neoplastic disease, producing false-positive and false-negative rates that limit diagnostic confidence~\cite{kelly2012}.
+Pneumonia remains the leading infectious cause of mortality globally, accounting for approximately 2.5~million deaths annually~\cite{gbd2019}, and is the single largest infectious killer of children under five~\cite{who2023}. Chest radiography (CXR) is the primary screening modality in both high- and low-resource clinical settings; however, solo radiographic interpretation is inherently difficult. Consolidation, ground-glass opacities, and interstitial infiltrates---the radiological hallmarks of pneumonia---overlap considerably with atelectasis, pleural effusion, pulmonary oedema, and neoplastic disease~\cite{kelly2012}.
 
-\textbf{Deep learning for CXR analysis.} CheXNet~\cite{rajpurkar2017chexnet} demonstrated that a 121-layer DenseNet trained on CheXpert data could match radiologist-level performance on pneumonia detection, galvanising interest in CNN-based clinical decision support. Subsequent works introduced attention mechanisms: Guan~et~al.~\cite{guan2018multi} showed multi-label CXR classification benefits from self-supervised attention guided by multiple categories simultaneously. Wang~et~al.~\cite{wang2017chestxray14} released the large-scale ChestX-ray14 benchmark, enabling comparison across 14 thoracic pathologies and establishing AUC as the canonical evaluation metric. Despite these advances, pure vision models exhibit a performance ceiling because X-rays encode anatomy but not physiology.
+\textbf{Deep learning for CXR analysis.} CheXNet~\cite{rajpurkar2017chexnet} demonstrated that a 121-layer DenseNet trained on the NIH ChestX-ray14 dataset could match radiologist-level pneumonia detection performance, achieving an AUC of 0.768 on the pneumonia class, galvanising interest in CNN-based clinical decision support. Guan~et~al.~\cite{guan2018multi} showed multi-label CXR classification benefits from self-supervised attention guided by multiple pathology categories simultaneously. Wang~et~al.~\cite{wang2017chestxray14} released the ChestX-ray14 benchmark enabling comparison across 14 thoracic pathologies and establishing AUC as the canonical evaluation metric. Despite these advances, pure vision models exhibit a performance ceiling because X-rays encode anatomy but not physiology.
 
-\textbf{Multimodal radiology AI.} Physicians do not interpret images in isolation: they combine visual findings with clinical history, radiology report narratives, and laboratory biomarkers. Alsentzer~et~al.~\cite{alsentzer2019bert} released Bio\_ClinicalBERT, a BERT variant pre-trained on MIMIC-III discharge summaries and clinical notes, providing domain-adapted language representations that capture medical terminology far better than general-purpose language models. Zhang~et~al.~\cite{zhang2020contrastive} applied contrastive learning to jointly represent CXR images and associated report sentences, improving zero-shot transfer across thoracic pathologies. Moon~et~al.~\cite{moon2022multimodal} proposed a multi-task transformer that jointly encodes image, report text, and structured metadata for comprehensive radiology report generation. However, a critical weakness in most multimodal systems is \emph{label leakage}: radiology reports contain IMPRESSION sections that directly state the radiologist's diagnosis, and models trained on raw reports learn to read the diagnosis rather than to infer it from evidence~\cite{bannur2023knowledge}.
+\textbf{Multimodal radiology AI.} Physicians do not interpret images in isolation: they combine visual findings with clinical history, radiology report narratives, and laboratory biomarkers. Alsentzer~et~al.~\cite{alsentzer2019bert} released Bio\_ClinicalBERT, a BERT variant pre-trained on MIMIC-III discharge summaries, providing domain-adapted language representations that capture medical terminology far better than general-purpose language models. Zhang~et~al.~\cite{zhang2020contrastive} applied contrastive learning to jointly represent CXR images and associated report sentences, improving zero-shot transfer across thoracic pathologies. However, a critical weakness in most multimodal systems is \emph{label leakage}: radiology reports contain IMPRESSION sections that directly state the radiologist's diagnosis, and models trained on raw reports learn to read the diagnosis rather than to infer it from evidence~\cite{bannur2023knowledge}.
 
-\textbf{Laboratory biomarkers as a complementary signal.} The White Blood Cell (WBC) count from a routine Complete Blood Count (CBC) is one of the oldest and most universally available inflammatory markers. Elevated WBC (leukocytosis, $>$11{,}000~cells/$\mu$L) is a hallmark of bacterial infection and is routinely ordered in emergency triage for every patient with suspected pneumonia. Critically, CBC results are available within 15~minutes of a blood draw, fitting naturally into the initial 30-minute emergency admission window alongside the chest radiograph. Yu~et~al.~\cite{frontiers2025pneumofusion} integrated multi-modal signals including imaging with clinical metadata in PneumoFusion-Net using a ResNet-50 backbone with Global Channel-Spatial Attention, achieving improvements over single-modality approaches; however, they did not enforce anti-leakage protocols for clinical text. To date, no published system has specifically studied the marginal value of WBC count as a targeted, minimal-overhead complement to CXR + radiology text under strict leakage controls on a large credentialled dataset.
+\textbf{Laboratory biomarkers as a complementary signal.} The White Blood Cell (WBC) count from a routine Complete Blood Count (CBC) is one of the oldest and most universally available inflammatory markers. Elevated WBC (leukocytosis, $>$11{,}000~cells/$\mu$L) is a hallmark of bacterial infection and is routinely ordered in emergency triage. Critically, CBC results are available within 15~minutes of a blood draw, fitting naturally into the initial 30-minute emergency admission window alongside the chest radiograph. To date, no published system has specifically studied the marginal value of WBC count as a targeted, minimal-overhead complement to CXR + radiology text under strict leakage controls on a large credentialled dataset.
 
 \textbf{Contributions.} This paper presents \textbf{PneumoFusionNet}, which makes the following specific contributions:
 \begin{enumerate}[noitemsep, leftmargin=*]
-  \item A \textbf{leakage-controlled text pipeline} that enforces IMPRESSION removal and keyword redaction, validated by observing that model performance degrades to random if only redacted IMPRESSION text is provided.
+  \item A \textbf{leakage-controlled text pipeline} that enforces IMPRESSION removal and keyword redaction, validated by a sanity check showing performance degrades to AUC\,=\,0.512 when only the stripped IMPRESSION text is provided.
   \item A \textbf{progressive three-phase architecture}: image-only (Phase~1) $\to$ image+text cross-attention (Phase~2v2) $\to$ image+text+WBC triple fusion (Phase~3c), enabling quantitative isolation of each modality's contribution.
-  \item \textbf{Phase~4a}: a lightweight \textbf{FiLM-conditioned dual-fusion} model (CXR + WBC only, no report needed), designed for settings where radiology reports are unavailable or delayed, achieving AUC\,=\,0.895 with $<$1M trainable parameters.
-  \item Comprehensive evaluation on 3{,}763 PA-view MIMIC-CXR studies with zero-patient-overlap splits, multiple threshold strategies calibrated to clinical deployment scenarios, and comparison against published state-of-the-art systems.
+  \item Comprehensive evaluation on 3{,}763 PA-view MIMIC-CXR studies with zero-patient-overlap splits, multiple threshold strategies calibrated to clinical deployment scenarios (emergency triage vs.\ confirmatory testing), and comparison against published state-of-the-art systems.
 \end{enumerate}
 
 % ==========================================================
@@ -130,13 +130,11 @@ Pneumonia kills approximately 2.5~million people annually and is the leading inf
 % ==========================================================
 \section{\textcolor{aideep}{Related Work}}
 
-\textbf{Image-only CXR classifiers.} Following CheXNet~\cite{rajpurkar2017chexnet}, numerous architectures have been applied to thoracic disease detection. EfficientNet-based models~\cite{tan2019efficientnet} achieve strong ImageNet transfer but underperform domain-pretrained models on grayscale radiographs---our pilot experiments confirmed an AUC drop from 0.826 to 0.713 when replacing TorchXRayVision DenseNet-121 with an ImageNet EfficientNet-B4. Attention mechanisms such as CBAM~\cite{woo2018cbam} and spatial pyramid pooling have been shown to improve localisation of pulmonary infiltrates.
+\textbf{Image-only CXR classifiers.} Following CheXNet~\cite{rajpurkar2017chexnet}, numerous architectures have been applied to thoracic disease detection. EfficientNet-based models~\cite{tan2019efficientnet} achieve strong ImageNet transfer but underperform domain-pretrained models on grayscale radiographs---our pilot experiments confirmed an AUC drop when replacing TorchXRayVision DenseNet-121 with an ImageNet-pretrained backbone. Attention mechanisms such as CBAM~\cite{woo2018cbam} and spatial pyramid pooling have been shown to improve localisation of pulmonary infiltrates.
 
-\textbf{Multimodal image-text systems.} ConVIRT~\cite{zhang2020contrastive} and BioViL~\cite{bannur2023knowledge} use contrastive learning to align CXR embeddings with report sentences, demonstrating substantial zero-shot transfer. However, these systems require paired image-report data and are pre-training frameworks rather than supervised classifiers. Our Phase~2v2 builds on the supervised cross-attention paradigm of~\cite{moon2022multimodal}, extending it with strict leakage controls not present in prior work.
+\textbf{Multimodal image-text systems.} ConVIRT~\cite{zhang2020contrastive} and BioViL~\cite{bannur2023knowledge} use contrastive learning to align CXR embeddings with report sentences, demonstrating substantial zero-shot transfer. These are pre-training frameworks rather than supervised classifiers. Our Phase~2v2 builds on the supervised cross-attention paradigm, extending it with strict leakage controls not present in prior work.
 
-\textbf{Clinical metadata integration.} CheXFusion~\cite{kovaleva2020towards} fused structured metadata (age, gender, view position) with image features via concatenation, achieving modest gains. More recent work by~\cite{acosta2022multimodal} demonstrated that combining imaging with tabular EHR data in a multimodal transformer substantially outperforms either modality alone for mortality prediction. Our Phase~3c study is unique in isolating the marginal value of a single, rapidly-available biomarker (WBC) rather than a large feature panel, and in comparing this targeted fusion against the full 17-feature EHR variant.
-
-\textbf{FiLM conditioning for medical imaging.} Feature-wise Linear Modulation (FiLM)~\cite{perez2018film} was introduced for visual reasoning tasks where a language conditioning signal modulates intermediate CNN representations. Dumoulin~et~al.~\cite{dumoulin2017learned} demonstrated FiLM-style normalisation in style transfer. Recent medical applications have used FiLM to condition image segmentation networks on patient metadata~\cite{lemay2021benefits}, motivating our Phase~4a design.
+\textbf{Clinical metadata integration.} Yu~et~al.~\cite{frontiers2025pneumofusion} proposed PneumoFusion-Net combining ResNet-50 with Global Channel-Spatial Attention for pneumonia classification, achieving strong multi-class performance on CT imaging. Acosta~et~al.~\cite{acosta2022multimodal} demonstrated that combining imaging with tabular EHR data in a multimodal transformer substantially outperforms either modality alone for mortality prediction. Our Phase~3c study is unique in isolating the marginal value of a single, rapidly-available biomarker (WBC) rather than a large feature panel, and comparing this targeted fusion against the full 17-feature EHR variant on the restricted MIMIC-CXR clinical dataset.
 
 % ==========================================================
 %  III. DATASET
@@ -152,8 +150,8 @@ White Blood Cell measurements were extracted from \textbf{MIMIC-IV}~\cite{johnso
 \begin{itemize}[noitemsep, leftmargin=*]
   \item \textbf{Normal}: 1{,}872 studies \quad \textbf{Pneumonia}: 1{,}891 studies \quad \textbf{Total}: 3{,}763
   \item \textbf{Patient-level split}: Train\,2{,}633 / Val\,565 / Test\,565
-  \item Approximately 15\% of WBC values were missing; imputed using the median computed exclusively from the training partition (same scalar applied at inference)
-  \item \textbf{WBC distribution}: Pneumonia cases show 15.4\% leukocytosis rate vs.\ 7.2\% in normal cases, confirming clinical discriminatory value of the biomarker
+  \item Approximately 15\% of WBC values were missing; imputed using the median computed exclusively from the training partition
+  \item \textbf{WBC clinical signal}: Pneumonia cases show 15.4\% leukocytosis rate vs.\ 7.2\% in normal cases, confirming discriminatory value of the biomarker
 \end{itemize}
 
 % ==========================================================
@@ -161,115 +159,83 @@ White Blood Cell measurements were extracted from \textbf{MIMIC-IV}~\cite{johnso
 % ==========================================================
 \section{\textcolor{aideep}{Methodology}}
 
-% ── Architecture Diagram ──────────────────────────────────
 \begin{figure*}[!t]
 \centering
 \includegraphics[width=0.85\textwidth]{architecture.png}
-\caption{\textcolor{aideep}{PneumoFusionNet Phase~3c architecture.} Three input modalities---chest X-ray, leakage-free radiology report text, and WBC blood count---flow through separate encoder branches. The image and text representations interact via 8-head cross-attention, then concatenate with the WBC embedding to form a 1{,}600-dimensional feature vector for binary classification. Phase~4a (dashed box) replaces the text branch with a FiLM generator conditioned directly on WBC.}
+\caption{\textcolor{aideep}{PneumoFusionNet Phase~3c architecture.} Three input modalities---chest X-ray, leakage-free radiology report text, and WBC blood count---flow through separate encoder branches. The image and text representations interact via 8-head cross-attention, then concatenate with the WBC embedding to form a 1{,}600-dimensional feature vector for binary classification.}
 \label{fig:architecture}
 \end{figure*}
 
 \subsection{Phase~1: Vision Backbone (Image-Only Baseline)}
 
-The image encoder uses \textbf{DenseNet-121}~\cite{huang2017densenet} pre-trained on over 500{,}000 frontal chest radiographs via TorchXRayVision~\cite{cohen2022torchxrayvision}. Domain-specific pre-training is critical: pilot experiments replacing this backbone with ImageNet-pre-trained ResNet-50 caused AUC to drop from 0.826 to 0.713 on the scaled PA cohort, confirming the necessity of radiological domain transfer.
+The image encoder uses \textbf{DenseNet-121}~\cite{huang2017densenet} pre-trained on hundreds of thousands of frontal chest radiographs via the TorchXRayVision~\cite{cohen2022torchxrayvision} library, which aggregates multiple public chest X-ray datasets (MIMIC-CXR, CheXpert, PadChest, NIH ChestX-ray14, and others). Domain-specific pre-training is critical: pilot experiments showed that replacing this backbone with an ImageNet-pretrained model caused a significant AUC drop on the scaled PA cohort, confirming the necessity of radiological domain transfer.
 
 Images are normalised to the TorchXRayVision intensity range $[-1024, 1024]$, resized to $224 \times 224$, and preprocessed with contrast-limited adaptive histogram equalisation (\textbf{CLAHE}, clip limit 2.0, tile grid $8 \times 8$) to enhance subtle infiltrate contrast. Training augmentation includes random horizontal flip, rotation ($\pm10°$), small translation ($\pm5\%$), and Gaussian blur.
 
 A \textbf{Convolutional Block Attention Module (CBAM)}~\cite{woo2018cbam} is appended after the DenseNet backbone to direct the network toward diagnostically relevant pulmonary regions:
 \begin{equation}
-  \mathbf{F}' = \mathbf{M}_c(\mathbf{F}) \otimes \mathbf{F}
-  \label{eq:cbam_channel}
-\end{equation}
-\begin{equation}
-  \mathbf{F}'' = \mathbf{M}_s(\mathbf{F}') \otimes \mathbf{F}'
-  \label{eq:cbam_spatial}
+  \mathbf{F}' = \mathbf{M}_c(\mathbf{F}) \otimes \mathbf{F}, \quad \mathbf{F}'' = \mathbf{M}_s(\mathbf{F}') \otimes \mathbf{F}'
 \end{equation}
 where the channel attention map is:
 \begin{equation}
   \mathbf{M}_c(\mathbf{F}) = \sigma\!\left(\text{MLP}\!\left(\text{AvgPool}(\mathbf{F})\right) + \text{MLP}\!\left(\text{MaxPool}(\mathbf{F})\right)\right)
   \label{eq:channel}
 \end{equation}
-with reduction ratio $r\!=\!16$, and the spatial attention map is:
+with channel reduction ratio $r\!=\!16$, and the spatial attention map is:
 \begin{equation}
   \mathbf{M}_s(\mathbf{F}') = \sigma\!\left(f^{7\times7}\!\left([\text{AvgPool}_c(\mathbf{F}');\,\text{MaxPool}_c(\mathbf{F}')]\right)\right)
   \label{eq:spatial}
 \end{equation}
-where $\sigma$ denotes the sigmoid function and $f^{7\times7}$ is a $7\times7$ convolutional filter.
+where $\sigma$ is the sigmoid function and $f^{7\times7}$ is a $7\times7$ convolutional filter.
 
-\textbf{Training configuration:} 5-fold GroupKFold cross-validation (grouped on \texttt{subject\_id}) with zero patient overlap, \textbf{Focal Loss}~\cite{lin2017focal} ($\gamma\!=\!2.0$, class weights from training distribution), AdamW optimiser ($\eta\!=\!10^{-4}$, weight decay $10^{-4}$), cosine annealing LR schedule, and 10-view \textbf{Test-Time Augmentation} (TTA) at inference. The encoder output is a \textbf{1024-dimensional} global average pooled feature vector $\mathbf{v}_{\text{img}} \in \mathbb{R}^{1024}$, which is frozen for all downstream phases to prevent catastrophic forgetting.
+\textbf{Training:} 5-fold GroupKFold cross-validation (grouped on \texttt{subject\_id}) with zero patient overlap, \textbf{Focal Loss}~\cite{lin2017focal} ($\gamma\!=\!2.0$), AdamW ($\eta\!=\!10^{-4}$, weight decay $10^{-4}$), cosine annealing LR schedule, and 10-view \textbf{Test-Time Augmentation} (TTA). The encoder output is a \textbf{1024-dimensional} global average pooled feature vector $\mathbf{v}_{\text{img}} \in \mathbb{R}^{1024}$, frozen for all downstream phases.
 
 \subsection{Phase~2: Radiology Text Fusion via Cross-Attention}
 
-\textbf{Anti-leakage preprocessing} (detailed in Section~\ref{sec:antileak}) strips diagnostic IMPRESSION/CONCLUSION sections and redacts explicit pathology keywords from FINDINGS and HISTORY sections. The cleaned text is truncated/padded to 256 WordPiece tokens.
+\textbf{Anti-leakage preprocessing} (Section~\ref{sec:antileak}) strips diagnostic IMPRESSION/CONCLUSION sections and redacts explicit pathology keywords. Cleaned text is truncated/padded to 256 WordPiece tokens.
 
-Text is encoded using \textbf{Bio\_ClinicalBERT}~\cite{alsentzer2019bert}, a 110M-parameter BERT-base model pre-trained on MIMIC-III clinical notes. The \textbf{top two transformer layers (10 and 11)} are unfrozen with a conservative learning rate $\eta_{\text{BERT}}\!=\!10^{-5}$ to enable task-specific adaptation while preventing catastrophic forgetting of clinical language representations; all lower layers remain frozen. The encoder emits the full token sequence $\mathbf{T} \in \mathbb{R}^{B \times 256 \times 768}$.
+Text is encoded using \textbf{Bio\_ClinicalBERT}~\cite{alsentzer2019bert}, a 110M-parameter BERT-base model pre-trained on MIMIC-III clinical notes. The \textbf{top two transformer layers (10 and 11)} are unfrozen with learning rate $\eta_{\text{BERT}}\!=\!10^{-5}$; all lower layers remain frozen. The encoder emits the full token sequence $\mathbf{T} \in \mathbb{R}^{B \times 256 \times 768}$.
 
-\textbf{8-head cross-attention fusion.} Image features act as queries and textual tokens as keys/values, allowing the model to identify which textual evidence is most relevant for the visual finding being analysed:
+\textbf{8-head cross-attention fusion.} Image features act as queries; textual tokens act as keys and values, allowing the model to identify which textual evidence is most relevant to the visual finding:
 \begin{equation}
   \mathbf{c}_{\text{cross}} = \text{softmax}\!\left(\frac{\mathbf{Q}_{\text{img}}\mathbf{K}_{\text{txt}}^\top}{\sqrt{d_k}}\right)\mathbf{V}_{\text{txt}}, \quad d_k = 64
   \label{eq:crossattn}
 \end{equation}
-where $\mathbf{Q}_{\text{img}} = \mathbf{v}_{\text{img}}\mathbf{W}_Q$ ($\mathbf{W}_Q \in \mathbb{R}^{1024 \times 512}$), and $\mathbf{K}_{\text{txt}}, \mathbf{V}_{\text{txt}}$ project each of the 256 text tokens through $\mathbf{W}_K, \mathbf{W}_V \in \mathbb{R}^{768 \times 512}$. After multi-head pooling and a linear projection, this yields $\mathbf{c}_{\text{cross}} \in \mathbb{R}^{512}$.
+where $\mathbf{Q}_{\text{img}} = \mathbf{v}_{\text{img}}\mathbf{W}_Q$ ($\mathbf{W}_Q \in \mathbb{R}^{1024 \times 512}$), and $\mathbf{K}_{\text{txt}}, \mathbf{V}_{\text{txt}}$ project text tokens via $\mathbf{W}_K, \mathbf{W}_V \in \mathbb{R}^{768 \times 512}$. After multi-head pooling and linear projection: $\mathbf{c}_{\text{cross}} \in \mathbb{R}^{512}$.
 
 The classification head for Phase~2:
 \begin{equation}
   [\mathbf{v}_{\text{img}} \,\|\, \mathbf{c}_{\text{cross}}] \in \mathbb{R}^{1536} \xrightarrow{\text{LN} \to 512 \to 128 \to 2} \hat{y}
 \end{equation}
 
-\textbf{Training configuration:} Focal Loss ($\gamma\!=\!2.0$), embedding Mixup~\cite{zhang2018mixup} ($\alpha\!=\!0.2$) applied in the fused embedding space, differential AdamW learning rates: fusion head at $2\!\times\!10^{-4}$, BERT layers at $10^{-5}$. Early stopping on validation AUC (patience 8). \textbf{Trainable parameters: $\approx$\,18M} (BERT layers 10--11: 14M; cross-attention: 3M; classifier: 1M).
+\textbf{Training:} Focal Loss ($\gamma\!=\!2.0$), embedding Mixup~\cite{zhang2018mixup} ($\alpha\!=\!0.2$), differential AdamW: fusion head at $2\!\times\!10^{-4}$, BERT at $10^{-5}$. Early stopping on validation AUC (patience~8). \textbf{Trainable parameters: $\approx$\,18M}.
 
 \subsection{Phase~3c: WBC Triple Fusion (Main Conference Model)}
 
-The WBC scalar is standardised using a \texttt{StandardScaler} fitted on the training split and projected through a dedicated three-layer non-linear encoder:
+The WBC scalar is standardised using a \texttt{StandardScaler} fitted on the training split and projected through a dedicated non-linear encoder:
 \begin{equation}
   \mathbf{e}_{\text{wbc}} = \text{MLP}(\text{wbc}): \; 1 \to 128 \to 128 \to 64
   \label{eq:wbcmlp}
 \end{equation}
-with ReLU activations and dropout $(p\!=\!0.3, p\!=\!0.2)$. This nonlinear projection is clinically motivated: a WBC of 12{,}000 vs.\ 16{,}000 vs.\ 28{,}000~cells/$\mu$L represents qualitatively distinct physiological states (borderline leukocytosis vs.\ acute infection vs.\ severe sepsis) that a linear transformation cannot adequately capture. The network can thus learn to respond to WBC in a threshold-like, non-proportional manner, mirroring clinical interpretation.
+with ReLU activations and dropout $(p\!=\!0.3, p\!=\!0.2)$. This nonlinear projection is clinically motivated: a WBC of 12{,}000 vs.\ 16{,}000 vs.\ 28{,}000~cells/$\mu$L represents qualitatively distinct physiological states that a linear transformation cannot adequately capture.
 
-All three embeddings are concatenated to form the multimodal representation:
+All three embeddings are concatenated:
 \begin{equation}
   \mathbf{z} = [\,\mathbf{v}_{\text{img}} \,\|\, \mathbf{c}_{\text{cross}} \,\|\, \mathbf{e}_{\text{wbc}}\,] \in \mathbb{R}^{1600}
   \label{eq:concat}
 \end{equation}
 where $\mathbf{v}_{\text{img}} \in \mathbb{R}^{1024}$, $\mathbf{c}_{\text{cross}} \in \mathbb{R}^{512}$, $\mathbf{e}_{\text{wbc}} \in \mathbb{R}^{64}$.
 
-The classifier head processes this 1{,}600-dimensional vector:
+The classifier head:
 \begin{equation}
   \text{LN}(1600) \to \text{Drop}(0.4) \to 512 \to \text{Drop}(0.3) \to 128 \to \text{Drop}(0.2) \to 2
   \label{eq:head}
 \end{equation}
 with GELU activations throughout.
 
-\textbf{Warm-start protocol.} Phase~3c loads the trained Phase~2v2 checkpoint, preserving cross-attention alignment while initialising the WBC encoder from random weights. This warm-start reduces training time by $\approx$40\% compared to training from scratch. Differential learning rates: BERT\,=\,$10^{-5}$, fusion head\,=\,$2\!\times\!10^{-4}$, WBC encoder\,=\,$10^{-3}$. \textbf{Total trainable parameters: $\approx$\,18M.}
+\textbf{Warm-start:} Phase~3c loads the trained Phase~2v2 checkpoint, preserving cross-attention alignment while initialising the WBC encoder from random weights. Differential learning rates: BERT\,=\,$10^{-5}$, fusion head\,=\,$2\!\times\!10^{-4}$, WBC encoder\,=\,$10^{-3}$. \textbf{Total trainable parameters: $\approx$\,18M.}
 
-\textbf{Threshold calibration.} Decision thresholds are selected on the validation set only, using Youden's J statistic ($J = \text{TPR} - \text{FPR}$) for balanced operation and $\tau\!=\!0.500$ for emergency screening scenarios. The held-out test set is never used for threshold selection.
-
-\subsection{Phase~4a: FiLM-Conditioned Dual Fusion (Real-World Deployment Variant)}
-\label{sec:phase4a}
-
-Many emergency departments---particularly in resource-limited settings---cannot reliably access digitised radiology reports within the first 15~minutes of patient arrival. Phase~4a addresses this with a \textbf{report-free} model that achieves strong performance using only the chest X-ray and the readily available WBC count.
-
-Rather than concatenating a WBC embedding with image features, Phase~4a uses \textbf{Feature-wise Linear Modulation (FiLM)}~\cite{perez2018film} to allow the WBC scalar to dynamically rescale and shift the frozen DenseNet-121 feature channels:
-\begin{equation}
-  \text{FiLM}(\mathbf{v}_{\text{img}}; \gamma, \beta) = \gamma \odot \mathbf{v}_{\text{img}} + \beta
-  \label{eq:film}
-\end{equation}
-where $\gamma, \beta \in \mathbb{R}^{1024}$ are predicted by a lightweight \textbf{FiLM generator}:
-\begin{equation}
-  [\gamma,\, \beta] = \text{MLP}_{\text{film}}(\text{wbc}): \; 1 \to 256 \to 2048
-  \label{eq:filmgen}
-\end{equation}
-The generator outputs a 2048-dimensional vector that is split into two 1024-dimensional vectors $\gamma$ and $\beta$. This formulation allows the WBC value to amplify feature channels associated with inflammatory consolidation (high $\gamma_i$ when WBC is elevated) and suppress channels linked to benign opacity patterns.
-
-The modulated features pass through a classification head:
-\begin{equation}
-  \text{FiLM}(\mathbf{v}_{\text{img}}) \xrightarrow{\text{LN} \to \text{Drop}(0.3) \to 512 \to 256 \to 2} \hat{y}
-\end{equation}
-
-\textbf{Training configuration:} The DenseNet-121 ImageEncoder is fully frozen (all parameters locked). Only the FiLM generator and classifier head are trained, yielding \textbf{$<$1M trainable parameters} (vs.\ $\sim$18M for Phase~3c). Focal Loss ($\gamma\!=\!2.0$) and dual Mixup (applied jointly to image features and WBC scalar). AdamW, $\eta\!=\!5\!\times\!10^{-4}$, early stopping (patience 10). This ultra-lightweight design makes Phase~4a suitable for edge deployment on low-power clinical hardware.
-
-\textbf{Interpretability.} The FiLM $\gamma$ and $\beta$ vectors provide direct auditability: for any patient, one can inspect which of the 1024 feature channels were amplified ($\gamma_i \gg 1$) or suppressed ($\gamma_i \ll 1$) in response to their WBC value, offering mechanistic insight absent in standard concatenation models.
+\textbf{Threshold calibration:} Decision thresholds are selected on the validation set using Youden's J statistic ($J = \text{TPR} - \text{FPR}$) for balanced operation and $\tau\!=\!0.500$ for emergency screening. The held-out test set is never used for threshold selection.
 
 % ==========================================================
 %  V. ANTI-LEAKAGE PROTOCOL
@@ -277,16 +243,14 @@ The modulated features pass through a classification head:
 \section{\textcolor{aideep}{Anti-Leakage Protocol}}
 \label{sec:antileak}
 
-A critical concern in multimodal medical AI is diagnostic label leakage through text. Radiology reports contain an IMPRESSION section that directly states the radiologist's diagnosis. Models trained on raw reports achieve artificially high performance by memorising this conclusion rather than learning from clinical evidence. To our knowledge, this risk is not explicitly mitigated in most prior multimodal CXR classification systems~\cite{kovaleva2020towards,moon2022multimodal}.
-
-PneumoFusionNet enforces the following multi-layer safeguards:
+Radiology reports contain an IMPRESSION section that directly states the radiologist's diagnosis. Models trained on raw reports achieve artificially high performance by memorising this conclusion rather than learning from clinical evidence~\cite{bannur2023knowledge}. PneumoFusionNet enforces the following safeguards:
 \begin{enumerate}[noitemsep, leftmargin=*]
-  \item \textbf{Impression Removal:} IMPRESSION and CONCLUSION sections are stripped via regular-expression parsing before tokenisation. Only FINDINGS and HISTORY sections are retained.
-  \item \textbf{Keyword Redaction:} Diagnostic trigger words (e.g., ``pneumonia'', ``pneumonic'', ``lobar consolidation'', ``compatible with infection'', ``no acute cardiopulmonary process'') in remaining text are replaced with \texttt{[REDACTED]}.
-  \item \textbf{Patient-Level Splitting:} All partitions enforce strict grouping on \texttt{subject\_id} using GroupKFold (Phase~1) and GroupShuffleSplit (Phases~2--4a). Automated verification confirms: Train $\cap$ Val\,=\,$\emptyset$, Train $\cap$ Test\,=\,$\emptyset$, Val $\cap$ Test\,=\,$\emptyset$.
-  \item \textbf{PA-Only Filtering:} AP views were removed after pilot experiments revealed that view type correlated with patient acuity (ICU patients receive bedside AP scans), creating an acquisition-bias shortcut.
-  \item \textbf{Train-Only Imputation:} Missing WBC values (15\%) are imputed using the training-set median. The same scalar is applied to validation and test sets without leaking test distribution information.
-  \item \textbf{Leakage Sanity Check:} A model trained on \emph{only} the redacted IMPRESSION text (after stripping) achieved AUC\,=\,0.512, confirming no residual diagnostic signal in the stripped text.
+  \item \textbf{Impression Removal:} IMPRESSION and CONCLUSION sections are stripped via regular-expression parsing. Only FINDINGS and HISTORY are retained.
+  \item \textbf{Keyword Redaction:} Diagnostic trigger words (e.g., ``pneumonia'', ``lobar consolidation'', ``compatible with infection'', ``no acute cardiopulmonary process'') are replaced with \texttt{[REDACTED]}.
+  \item \textbf{Patient-Level Splitting:} All partitions enforce strict grouping on \texttt{subject\_id} using GroupKFold (Phase~1) and GroupShuffleSplit (Phases~2--3c). Verified: Train~$\cap$~Val\,=\,$\emptyset$, Train~$\cap$~Test\,=\,$\emptyset$, Val~$\cap$~Test\,=\,$\emptyset$.
+  \item \textbf{PA-Only Filtering:} AP views removed after pilot experiments revealed view-type correlation with patient acuity.
+  \item \textbf{Train-Only Imputation:} Missing WBC values (15\%) imputed using training-set median only.
+  \item \textbf{Leakage Sanity Check:} A model trained on only the stripped IMPRESSION text achieved AUC\,=\,0.512, confirming no residual diagnostic signal.
 \end{enumerate}
 
 % ==========================================================
@@ -294,12 +258,12 @@ PneumoFusionNet enforces the following multi-layer safeguards:
 % ==========================================================
 \section{\textcolor{aideep}{Results}}
 
-All metrics are reported on the held-out test set with patient-level partitioning. Decision thresholds are selected on the validation set only using Youden's J statistic and then applied to the test set without modification.
+All metrics are reported on the held-out test set ($N_{\text{test}}\!=\!565$) with patient-level partitioning. Decision thresholds are selected on the validation set only using Youden's J statistic and then applied unchanged to the test set.
 
 % ── Table I: Main Results ─────────────────────────────────
 \begin{table}[t]
 \centering
-\caption{\textcolor{aideep}{Progressive Performance Across Phases (Scale-Up Cohort, $N$\,=\,3{,}763)}}
+\caption{\textcolor{aideep}{Progressive Performance Across Phases (Scale-Up Cohort)}}
 \label{tab:results}
 \setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{@{}llcccc@{}}
@@ -307,20 +271,18 @@ All metrics are reported on the held-out test set with patient-level partitionin
 \textbf{Phase / Model} & \textbf{Modality} & \textbf{AUC} & \textbf{Acc.} & \textbf{Sens.} & \textbf{Spec.} \\
 \midrule
 Phase 1 (CV)$^\dagger$ & CXR only & 0.826 & 76.3\% & 71.0\% & 81.6\% \\
-Phase 4a (FiLM)$^\ddagger$ & CXR + WBC & \underline{0.895} & \underline{83.1\%} & \underline{84.5\%} & \underline{81.8\%} \\
-Phase 2v2$^\S$ & CXR + Text & 0.946 & 87.8\% & 86.6\% & 89.1\% \\
-Phase 3 Full$^\|$ & CXR + Text + 17 EHR & 0.969 & 91.7\% & 89.1\% & 94.3\% \\
+Phase 2v2$^\ddagger$   & CXR + Text & 0.946 & 87.8\% & 86.6\% & 89.1\% \\
+Phase 3 Full$^\S$      & CXR + Text + 17 EHR & 0.969 & 91.7\% & 89.1\% & 94.3\% \\
 \textbf{Phase 3c}$^{**}$ & \textbf{CXR + Text + WBC} & \textbf{0.971} & \textbf{92.9\%} & \textbf{92.3\%} & \textbf{93.6\%} \\
 \bottomrule
-\multicolumn{6}{@{}l}{\footnotesize $^\dagger$5-fold GroupKFold mean (AUC $0.826 \pm 0.017$, $N_{\text{test}}$=565).}\\
-\multicolumn{6}{@{}l}{\footnotesize $^\ddagger$FiLM conditioning, no text required ($N_{\text{test}}$=565, $\tau$=0.500).}\\
-\multicolumn{6}{@{}l}{\footnotesize $^\S$Youden-J threshold ($\tau$=0.568), $N_{\text{test}}$=582.}\\
-\multicolumn{6}{@{}l}{\footnotesize $^\|$Full 17-feature EHR panel; 1--4\,h lab turnaround ($N_{\text{test}}$=565).}\\
+\multicolumn{6}{@{}l}{\footnotesize $^\dagger$5-fold GroupKFold mean (AUC $0.826 \pm 0.017$, $N$=3{,}763).}\\
+\multicolumn{6}{@{}l}{\footnotesize $^\ddagger$Youden-J threshold ($\tau$=0.568), $N_{\text{test}}$=582.}\\
+\multicolumn{6}{@{}l}{\footnotesize $^\S$Full 17-feature EHR; 1--4\,h lab turnaround ($N_{\text{test}}$=565).}\\
 \multicolumn{6}{@{}l}{\footnotesize $^{**}$Youden-J threshold ($\tau$=0.559), $N_{\text{test}}$=565.}\\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:results} reveals a clear progressive trajectory. The image-only Phase~1 model exhibits a hard ceiling at AUC\,=\,0.826 despite extensive optimisation (CBAM, Focal Loss, TTA, 5-fold CV), confirming that visual features alone are insufficient for reliable pneumonia detection. Phase~4a---using CXR and WBC without text---provides a substantial AUC gain to 0.895 with only $<$1M trainable parameters and no radiology report requirement, demonstrating the value of even a single laboratory biomarker as a low-cost complement to imaging. Adding structured radiology text (Phase~2v2) achieves AUC\,=\,0.946. The full triple fusion (Phase~3c) reaches AUC\,=\,0.971, outperforming even the 17-feature full EHR panel (AUC\,=\,0.969) with notably higher sensitivity (92.3\% vs.\ 89.1\%), while requiring only the WBC value as a laboratory input.
+Table~\ref{tab:results} reveals a clear progressive trajectory. The image-only Phase~1 model exhibits a ceiling at AUC\,=\,0.826 despite extensive optimisation (CBAM, Focal Loss, TTA, 5-fold CV), confirming that visual features alone are insufficient for reliable pneumonia detection. Adding leakage-free radiology text (Phase~2v2) achieves AUC\,=\,0.946 (+12.0~pp). The full triple fusion (Phase~3c) reaches AUC\,=\,0.971, outperforming even the 17-feature full EHR panel (AUC\,=\,0.969) with notably higher sensitivity (92.3\% vs.\ 89.1\%), while requiring only the WBC value as a laboratory input.
 
 % ── Table II: Threshold Analysis ──────────────────────────
 \begin{table}[t]
@@ -333,50 +295,52 @@ Table~\ref{tab:results} reveals a clear progressive trajectory. The image-only P
 \textbf{Strategy} & \textbf{Threshold} & \textbf{Acc.} & \textbf{Sens.} & \textbf{Spec.} \\
 \midrule
 Emergency Screening & 0.500 & 92.4\% & \textbf{94.7\%} & 90.0\% \\
-Youden-J (Optimal) & 0.559 & \textbf{92.9\%} & 92.3\% & 93.6\% \\
-Clinical Target & 0.575 & 92.7\% & 91.2\% & \textbf{94.3\%} \\
+Youden-J (Optimal)  & 0.559 & \textbf{92.9\%} & 92.3\% & 93.6\% \\
+Clinical Target     & 0.575 & 92.7\% & 91.2\% & \textbf{94.3\%} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:thresholds} shows Phase~3c under three deployment strategies. At the default threshold ($\tau\!=\!0.500$), the model attains 94.7\% sensitivity, minimising missed pneumonia cases---the preferred operating point in emergency triage where false negatives carry high clinical cost. The Youden-J threshold provides the best balanced accuracy (92.9\%), while the clinical target threshold (0.575) prioritises specificity (94.3\%), suitable for confirmatory testing scenarios where unnecessary antibiotic prescriptions must be avoided.
+Table~\ref{tab:thresholds} shows Phase~3c under three deployment strategies. The default threshold ($\tau\!=\!0.500$) maximises sensitivity (94.7\%), preferred in emergency triage where missed pneumonia cases carry high clinical cost. The Youden-J threshold provides the best balanced accuracy (92.9\%), while the clinical target threshold (0.575) prioritises specificity (94.3\%) for confirmatory testing where unnecessary antibiotic prescriptions must be minimised.
 
-% ── Table III: Comparison with Published Literature ───────
+% ── Table III: SOTA Comparison ────────────────────────────
 \begin{table}[t]
 \centering
 \caption{\textcolor{aideep}{Comparison with Published State-of-the-Art Systems}}
 \label{tab:sota}
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}p{3.4cm}p{1.8cm}ccc@{}}
+\begin{tabular}{@{}p{3.6cm}p{1.8cm}ccc@{}}
 \toprule
-\textbf{Method} & \textbf{Dataset} & \textbf{AUC} & \textbf{Sens.} & \textbf{Spec.} \\
+\textbf{Method} & \textbf{Dataset} & \textbf{AUC} & \textbf{Acc.} & \textbf{Modality} \\
 \midrule
-CheXNet~\cite{rajpurkar2017chexnet} (Image) & CheXpert & 0.769 & -- & -- \\
-Wang~et~al.~\cite{wang2017chestxray14} (Image) & ChestX-ray14 & 0.738 & -- & -- \\
-Yu~et~al.~\cite{frontiers2025pneumofusion} (Image+Meta) & Private & 0.930 & 91.0\% & 89.5\% \\
-Moon~et~al.~\cite{moon2022multimodal} (Image+Text) & MIMIC-CXR & 0.921 & 88.2\% & 90.1\% \\
+CheXNet~\cite{rajpurkar2017chexnet} & ChestX-ray14 & 0.768 & -- & Image \\
+Wang~et~al.~\cite{wang2017chestxray14}$^\dagger$ & ChestX-ray14 & 0.738 & -- & Image \\
+Yu~et~al.~\cite{frontiers2025pneumofusion}$^\ddagger$ & Private (CT) & -- & 98.96\% & Image+Meta \\
 \midrule
-\textbf{Ours Phase~4a} (Image+WBC only) & MIMIC-CXR & \textbf{0.895} & \textbf{84.5\%} & \textbf{81.8\%} \\
-\textbf{Ours Phase~3c} (Image+Text+WBC) & MIMIC-CXR & \textbf{0.971} & \textbf{92.3\%} & \textbf{93.6\%} \\
+\textbf{Ours Phase~2v2} & MIMIC-CXR & 0.946 & 87.8\% & CXR+Text \\
+\textbf{Ours Phase~3c}  & MIMIC-CXR & \textbf{0.971} & \textbf{92.9\%} & CXR+Text+WBC \\
 \bottomrule
-\multicolumn{5}{@{}l}{\footnotesize Note: Dataset and preprocessing differences limit strict comparability.}\\
+\multicolumn{5}{@{}l}{\footnotesize $^\dagger$Mean AUC across all 14 thoracic pathologies; pneumonia-specific AUC}\\
+\multicolumn{5}{@{}l}{\footnotesize was lower ($\approx$0.633) due to class imbalance (\textless1\% prevalence).}\\
+\multicolumn{5}{@{}l}{\footnotesize $^\ddagger$CT-based multi-class classification; task differs from our binary CXR}\\
+\multicolumn{5}{@{}l}{\footnotesize setting; not directly comparable.}\\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:sota} contextualises our results against published literature. Our Phase~3c model substantially outperforms CheXNet-style image-only systems (+20.2~pp AUC) and the best comparable multimodal system by Moon~et~al.\ (+5.0~pp AUC) despite using a simpler, lower-overhead clinical input (WBC vs.\ full NLP report ensembles). Even the lightweight Phase~4a model (no text, $<$1M params) achieves competitive performance relative to these baselines. We note that direct comparison is complicated by different datasets and evaluation protocols; values for prior systems are taken from their original publications on their respective evaluation sets.
+Table~\ref{tab:sota} contextualises our results against published literature. Our Phase~3c model substantially outperforms CheXNet-style image-only systems on their respective benchmarks (+20.3~pp AUC). Comparison with Yu~et~al.~\cite{frontiers2025pneumofusion} is presented for context only, as their system operates on CT scans using multi-class classification and a private dataset, which are fundamentally different from our binary CXR setting.
 
 % ── Figures ───────────────────────────────────────────────
 \begin{figure}[t]
   \centering
   \includegraphics[width=\columnwidth]{p3c_roc_curve.png}
-  \caption{\textcolor{aideep}{ROC curve for Phase~3c} (CXR + Text + WBC) on the held-out test set ($N$=565), achieving AUC\,=\,0.971. The three operating thresholds from Table~\ref{tab:thresholds} are marked.}
+  \caption{\textcolor{aideep}{ROC curve for Phase~3c} (CXR + Text + WBC) on held-out test set ($N$=565), achieving AUC\,=\,0.971. The three operating thresholds from Table~\ref{tab:thresholds} are marked.}
   \label{fig:roc}
 \end{figure}
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\columnwidth]{p3c_full_pipeline_comparison.png}
-  \caption{\textcolor{aideep}{Progressive pipeline comparison} showing AUC, accuracy, sensitivity, and specificity gains across Phase~1 (Image only), Phase~4a (Image + WBC FiLM), Phase~2v2 (Image + Text), and Phase~3c (Image + Text + WBC).}
+  \caption{\textcolor{aideep}{Progressive pipeline comparison} showing AUC, accuracy, sensitivity, and specificity gains across Phase~1 (CXR only), Phase~2v2 (CXR + Text), and Phase~3c (CXR + Text + WBC).}
   \label{fig:pipeline}
 \end{figure}
 
@@ -385,26 +349,24 @@ Table~\ref{tab:sota} contextualises our results against published literature. Ou
 % ==========================================================
 \section{\textcolor{aideep}{Discussion}}
 
-\textbf{Multimodal learning substantially outperforms image-only approaches.} The image-only model plateaued at AUC\,=\,0.826 despite extensive architectural optimisation. This ceiling reflects a fundamental limitation: chest radiographs encode morphological structure but not physiological state---the duration and severity of systemic inflammation, host immune response, or pre-existing comorbidities. Adding clinical context breaks this ceiling decisively.
-
-\textbf{FiLM conditioning enables effective scalar-to-image modulation.} Phase~4a demonstrates that a WBC scalar can meaningfully modulate frozen deep features through FiLM, achieving +6.9~pp AUC gain over the image baseline with no radiology text and $<$1M trainable parameters. The learned $\gamma$ values reveal that channels sensitive to bilateral infiltrate patterns are consistently upweighted when WBC is elevated, providing clinically interpretable feature attribution without Grad-CAM.
+\textbf{Multimodal learning substantially outperforms image-only approaches.} The image-only model plateaued at AUC\,=\,0.826 despite extensive architectural optimisation. This ceiling reflects a fundamental limitation: chest radiographs encode morphological structure but not physiological state---the duration and severity of systemic inflammation, host immune response, or pre-existing comorbidities.
 
 \textbf{Cross-attention enables selective image-text alignment.} The 8-head cross-attention mechanism allows image features to selectively attend to relevant textual tokens. When the radiograph shows an ambiguous opacity, the model attends to descriptive terms such as ``consolidation'', ``fever'', or ``productive cough'' in the FINDINGS section, disambiguating pathology from benign atelectasis or effusion.
 
-\textbf{Strict anti-leakage is essential for valid evaluation.} Removing the IMPRESSION section and redacting diagnostic keywords ensures that observed performance reflects genuine multimodal learning. Our sanity check---training on stripped IMPRESSION text alone achieving AUC\,=\,0.512---confirms the protocol's effectiveness. This stands in contrast to systems that train on raw reports and likely overestimate real-world performance.
+\textbf{Strict anti-leakage is essential for valid evaluation.} Removing the IMPRESSION section and redacting diagnostic keywords ensures that observed performance reflects genuine multimodal learning. Our sanity check---training on stripped IMPRESSION text alone achieving AUC\,=\,0.512---confirms the protocol's effectiveness.
 
-\textbf{A single biomarker provides substantial diagnostic value.} Although WBC is only one scalar measurement, its integration over image-text fusion contributed +2.5~pp AUC, +5.6~pp sensitivity, and +4.5~pp specificity. A CBC result is universally available, inexpensive, and obtained within 15~minutes of admission, making the CXR\,+\,Report\,+\,WBC triad feasible within 30~minutes. By contrast, the 17-feature full EHR panel (Phase~3 Full) delivered slightly lower sensitivity (89.1\%) and required 1--4~hours of laboratory processing, suggesting that targeted single-biomarker fusion is preferable to comprehensive but delayed panel integration.
+\textbf{A single biomarker provides substantial diagnostic value.} Although WBC is only one scalar measurement, its integration over image-text fusion contributed meaningful improvements: +2.5~pp AUC, +5.6~pp sensitivity, and +4.5~pp specificity. A Complete Blood Count is universally available and results arrive within 15~minutes of admission, making the CXR\,+\,Report\,+\,WBC triad feasible within 30~minutes of emergency presentation.
 
-\textbf{Phase~4a as a deployable fallback.} In scenarios where radiology reports are unavailable (resource-limited hospitals, point-of-care devices, telemedicine), Phase~4a provides a viable alternative achieving AUC\,=\,0.895 and 84.5\% sensitivity---substantially better than any image-only system and requiring only a standard CBC. The model fits on a CPU and could be embedded in a tablet-based clinical decision support tool.
+\textbf{Comparison with full clinical panel.} The 17-feature full EHR panel (Phase~3 Full, AUC\,=\,0.969) delivered lower sensitivity (89.1\% vs.\ 92.3\%) and required 1--4~hours of laboratory processing. Phase~3c with WBC alone achieves better sensitivity with a dramatically faster turnaround, suggesting that targeted single-biomarker fusion is preferable to comprehensive but delayed panel integration.
 
-\textbf{Limitations.} All data originate from a single US institution (BIDMC). The binary classification formulation does not address multi-label co-morbidities. Approximately 15\% of WBC values required median imputation. External validation on diverse populations, scanner hardware, and clinical workflows (e.g., Indian subcontinent hospitals) is essential before clinical deployment.
+\textbf{Limitations.} All data originate from a single US institution (BIDMC). The binary classification formulation does not address multi-label co-morbidities. Approximately 15\% of WBC values required median imputation. External validation on diverse populations and scanner hardware is necessary before clinical deployment.
 
 % ==========================================================
 %  VIII. CONCLUSION
 % ==========================================================
 \section{\textcolor{aideep}{Conclusion}}
 
-We presented PneumoFusionNet, a leakage-controlled progressive multimodal framework that integrates chest radiographs, anti-leakage radiology report text, and White Blood Cell count for pneumonia detection on 3{,}763 MIMIC-CXR studies. The proposed approach achieved systematic improvements from image-only learning (AUC\,=\,0.826) through image-text cross-attention fusion (AUC\,=\,0.946) to image-text-WBC triple fusion (AUC\,=\,0.971, Sensitivity\,=\,92.3\%, Specificity\,=\,93.6\%), outperforming published SOTA systems by 5.0~pp AUC while using fewer clinical features. The lightweight FiLM-conditioned Phase~4a variant (AUC\,=\,0.895, $<$1M params, no text required) provides a practical deployment pathway for resource-limited or time-critical settings. Both the triple-fusion and dual-fusion models operate within a 15--30~minute emergency admission window. Future work will investigate external validation on geographically diverse hospital datasets, multi-label pathology classification, and additional laboratory biomarkers (CRP, procalcitonin) as complementary inflammatory markers.
+We presented PneumoFusionNet, a leakage-controlled progressive multimodal framework that integrates chest radiographs, anti-leakage radiology report text, and White Blood Cell count for pneumonia detection on 3{,}763 MIMIC-CXR studies. The proposed approach achieved systematic improvements from image-only learning (AUC\,=\,0.826) through image-text cross-attention fusion (AUC\,=\,0.946) to image-text-WBC triple fusion (AUC\,=\,0.971, Sensitivity\,=\,92.3\%, Specificity\,=\,93.6\%). Phase~3c outperforms the full 17-feature EHR panel in sensitivity while using a single, rapidly-available laboratory biomarker, and the entire CXR\,+\,Report\,+\,WBC triad can be evaluated within 30~minutes of emergency admission. Future work will investigate external validation on geographically diverse hospital datasets, multi-label pathology classification, and additional laboratory biomarkers (CRP, procalcitonin) as complementary inflammatory markers.
 
 \vspace{4pt}
 \noindent\textbf{Code and Data:} \url{https://github.com/Ashutosh-yadav0001/PneumoFusionNet}. MIMIC-CXR data requires PhysioNet credentialled access (CITI training + DUA).
@@ -413,7 +375,10 @@ We presented PneumoFusionNet, a leakage-controlled progressive multimodal framew
 %  REFERENCES
 % ==========================================================
 {\small
-\begin{thebibliography}{18}
+\begin{thebibliography}{16}
+
+\bibitem{gbd2019}
+GBD 2019 Lower Respiratory Infections Collaborators, ``Burden of lower respiratory infections and aetiologies in 204 countries and territories, 1990--2019,'' \emph{The Lancet Infectious Diseases}, vol.~21, no.~12, pp.~1193--1210, 2021.
 
 \bibitem{who2023}
 World Health Organization, ``Pneumonia,'' \emph{WHO Fact Sheet}, 2023.
@@ -426,7 +391,7 @@ A.~M.~Kelly and B.~Gruner, ``Radiology of pneumonia,'' \emph{Clinics in Chest Me
 P.~Rajpurkar et~al., ``CheXNet: Radiologist-Level Pneumonia Detection on Chest X-Rays with Deep Learning,'' \emph{arXiv:1711.05225}, 2017.
 
 \bibitem{wang2017chestxray14}
-X.~Wang et~al., ``ChestX-ray8: Hospital-Scale Chest X-ray Database and Benchmarks,'' \emph{Proc.\ IEEE CVPR}, 2017, pp.~2097--2106.
+X.~Wang et~al., ``ChestX-ray8: Hospital-Scale Chest X-ray Database and Benchmarks on Weakly-Supervised Classification and Localization of Common Thorax Diseases,'' \emph{Proc.\ IEEE CVPR}, 2017, pp.~2097--2106.
 
 \bibitem{guan2018multi}
 Q.~Guan et~al., ``Multi-Label Chest X-ray Classification via Category-Wise Residual Attention Learning,'' \emph{Pattern Recognition Letters}, vol.~130, pp.~259--266, 2020.
@@ -446,23 +411,8 @@ Y.~Zhang, H.~Jiang, Y.~Miura, C.~D.~Manning, and C.~P.~Langlotz, ``Contrastive L
 \bibitem{bannur2023knowledge}
 S.~Bannur et~al., ``Learning to Exploit Temporal Structure for Biomedical Vision-Language Processing,'' \emph{Proc.\ IEEE CVPR}, 2023.
 
-\bibitem{moon2022multimodal}
-J.~H.~Moon et~al., ``Multi-modal Understanding and Generation for Medical Images and Text via Vision-Language Pre-training,'' \emph{IEEE J.\ Biomed.\ Health Inf.}, vol.~26, no.~12, pp.~6070--6080, 2022.
-
-\bibitem{kovaleva2020towards}
-O.~Kovaleva et~al., ``Towards Visual Dialog for Radiology,'' \emph{Proc.\ ACL Clinical NLP Workshop}, 2020.
-
 \bibitem{acosta2022multimodal}
 J.~N.~Acosta et~al., ``Multimodal biomedical AI,'' \emph{Nature Medicine}, vol.~28, pp.~1773--1784, 2022.
-
-\bibitem{perez2018film}
-E.~Perez, F.~Strub, H.~de~Vries, V.~Dumoulin, and A.~Courville, ``FiLM: Visual Reasoning with a General Conditioning Layer,'' \emph{Proc.\ AAAI}, 2018, pp.~3942--3951.
-
-\bibitem{dumoulin2017learned}
-V.~Dumoulin et~al., ``A Learned Representation for Artistic Style,'' \emph{Proc.\ ICLR}, 2017.
-
-\bibitem{lemay2021benefits}
-A.~Lemay et~al., ``Benefits of Linear Conditioning for Segmentation Using Metadata,'' \emph{Proc.\ MIDL}, 2021.
 
 \bibitem{johnson2019mimic}
 A.~E.~W.~Johnson et~al., ``MIMIC-CXR, a de-identified publicly available database of chest radiographs with free-text reports,'' \emph{Scientific Data}, vol.~6, no.~317, 2019.
