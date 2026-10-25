@@ -1,7 +1,7 @@
 % ==========================================================
-% PneumoFusionNet — IEEE Conference Paper
+% PneumoFusionNet: IEEE Conference Paper
 % Author: Ashutosh Yadav, IIT Guwahati
-% Revision: v2.1 — Fact-checked and corrected
+% Revision: v2.1 (Fact-checked and corrected)
 %   - Removed Phase 4a (unverified metrics)
 %   - Fixed CheXNet dataset: ChestX-ray14 (not CheXpert), AUC=0.768
 %   - Fixed Wang et al.: 0.738 is 14-disease mean, clarified
@@ -110,7 +110,7 @@ Pneumonia Detection, Chest X-Ray, MIMIC-CXR, Bio\_ClinicalBERT, Cross-Attention,
 % ==========================================================
 \section{\textcolor{aideep}{Introduction}}
 
-Pneumonia remains the leading infectious cause of mortality globally, accounting for approximately 2.5~million deaths annually~\cite{gbd2019}, and is the single largest infectious killer of children under five~\cite{who2023}. Chest radiography (CXR) is the primary screening modality in both high- and low-resource clinical settings; however, solo radiographic interpretation is inherently difficult. Consolidation, ground-glass opacities, and interstitial infiltrates---the radiological hallmarks of pneumonia---overlap considerably with atelectasis, pleural effusion, pulmonary oedema, and neoplastic disease~\cite{kelly2012}.
+Pneumonia remains the leading infectious cause of mortality globally, accounting for approximately 2.5~million deaths annually~\cite{gbd2019}, and is the single largest infectious killer of children under five~\cite{who2023}. Chest radiography (CXR) is the primary screening modality in both high- and low-resource clinical settings; however, solo radiographic interpretation is inherently difficult. Consolidation, ground-glass opacities, and interstitial infiltrates, which represent the hallmark radiological features of pneumonia, overlap considerably with atelectasis, pleural effusion, pulmonary oedema, and neoplastic disease~\cite{kelly2012}.
 
 \textbf{Deep learning for CXR analysis.} CheXNet~\cite{rajpurkar2017chexnet} demonstrated that a 121-layer DenseNet trained on the NIH ChestX-ray14 dataset could match radiologist-level pneumonia detection performance, achieving an AUC of 0.768 on the pneumonia class, galvanising interest in CNN-based clinical decision support. Guan~et~al.~\cite{guan2018multi} showed multi-label CXR classification benefits from self-supervised attention guided by multiple pathology categories simultaneously. Wang~et~al.~\cite{wang2017chestxray14} released the ChestX-ray14 benchmark enabling comparison across 14 thoracic pathologies and establishing AUC as the canonical evaluation metric. Despite these advances, pure vision models exhibit a performance ceiling because X-rays encode anatomy but not physiology.
 
@@ -130,7 +130,7 @@ Pneumonia remains the leading infectious cause of mortality globally, accounting
 % ==========================================================
 \section{\textcolor{aideep}{Related Work}}
 
-\textbf{Image-only CXR classifiers.} Following CheXNet~\cite{rajpurkar2017chexnet}, numerous architectures have been applied to thoracic disease detection. EfficientNet-based models~\cite{tan2019efficientnet} achieve strong ImageNet transfer but underperform domain-pretrained models on grayscale radiographs---our pilot experiments confirmed an AUC drop when replacing TorchXRayVision DenseNet-121 with an ImageNet-pretrained backbone. Attention mechanisms such as CBAM~\cite{woo2018cbam} and spatial pyramid pooling have been shown to improve localisation of pulmonary infiltrates.
+\textbf{Image-only CXR classifiers.} Following CheXNet~\cite{rajpurkar2017chexnet}, numerous architectures have been applied to thoracic disease detection. EfficientNet-based models~\cite{tan2019efficientnet} achieve strong ImageNet transfer but underperform domain-pretrained models on grayscale radiographs. In our pilot experiments, replacing TorchXRayVision DenseNet-121 with an ImageNet-pretrained backbone resulted in a notable drop in AUC. Attention mechanisms such as CBAM~\cite{woo2018cbam} and spatial pyramid pooling have been shown to improve localisation of pulmonary infiltrates.
 
 \textbf{Multimodal image-text systems.} ConVIRT~\cite{zhang2020contrastive} and BioViL~\cite{bannur2023knowledge} use contrastive learning to align CXR embeddings with report sentences, demonstrating substantial zero-shot transfer. These are pre-training frameworks rather than supervised classifiers. Our Phase~2v2 builds on the supervised cross-attention paradigm, extending it with strict leakage controls not present in prior work.
 
@@ -162,7 +162,7 @@ White Blood Cell measurements were extracted from \textbf{MIMIC-IV}~\cite{johnso
 \begin{figure*}[!t]
 \centering
 \href{architecture.png}{\includegraphics[width=0.85\textwidth]{architecture.png}}
-\caption{\textcolor{aideep}{PneumoFusionNet Phase~3c architecture.} Three input modalities---chest X-ray, leakage-free radiology report text, and WBC blood count---flow through separate encoder branches. The image and text representations interact via 8-head cross-attention, then concatenate with the WBC embedding to form a 1{,}600-dimensional feature vector for binary classification.}
+\caption{\textcolor{aideep}{PneumoFusionNet Phase~3c architecture.} Three input modalities (chest X-ray, leakage-free radiology report text, and WBC blood count) flow through separate encoder branches. The image and text representations interact via 8-head cross-attention, then concatenate with the WBC embedding to form a 1{,}600-dimensional feature vector for binary classification.}
 \label{fig:architecture}
 \end{figure*}
 
@@ -349,11 +349,11 @@ Table~\ref{tab:sota} contextualises our results against published literature. Ou
 % ==========================================================
 \section{\textcolor{aideep}{Discussion}}
 
-\textbf{Multimodal learning substantially outperforms image-only approaches.} The image-only model plateaued at AUC\,=\,0.826 despite extensive architectural optimisation. This ceiling reflects a fundamental limitation: chest radiographs encode morphological structure but not physiological state---the duration and severity of systemic inflammation, host immune response, or pre-existing comorbidities.
+\textbf{Multimodal learning substantially outperforms image-only approaches.} The image-only model plateaued at AUC\,=\,0.826 despite extensive architectural optimisation. This ceiling reflects a fundamental limitation: chest radiographs encode morphological structure but not physiological state, such as the duration and severity of systemic inflammation, host immune response, or pre-existing comorbidities.
 
 \textbf{Cross-attention enables selective image-text alignment.} The 8-head cross-attention mechanism allows image features to selectively attend to relevant textual tokens. When the radiograph shows an ambiguous opacity, the model attends to descriptive terms such as ``consolidation'', ``fever'', or ``productive cough'' in the FINDINGS section, disambiguating pathology from benign atelectasis or effusion.
 
-\textbf{Strict anti-leakage is essential for valid evaluation.} Removing the IMPRESSION section and redacting diagnostic keywords ensures that observed performance reflects genuine multimodal learning. Our sanity check---training on stripped IMPRESSION text alone achieving AUC\,=\,0.512---confirms the protocol's effectiveness.
+\textbf{Strict anti-leakage is essential for valid evaluation.} Removing the IMPRESSION section and redacting diagnostic keywords ensures that observed performance reflects genuine multimodal learning. Our sanity check, where training on stripped IMPRESSION text alone achieved AUC\,=\,0.512, confirms the protocol's effectiveness.
 
 \textbf{A single biomarker provides substantial diagnostic value.} Although WBC is only one scalar measurement, its integration over image-text fusion contributed meaningful improvements: +2.5~pp AUC, +5.6~pp sensitivity, and +4.5~pp specificity. A Complete Blood Count is universally available and results arrive within 15~minutes of admission, making the CXR\,+\,Report\,+\,WBC triad feasible within 30~minutes of emergency presentation.
 
