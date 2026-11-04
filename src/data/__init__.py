@@ -8,6 +8,8 @@ Import only what you need:
         get_train_transforms, get_val_transforms, get_tta_transforms,
         compute_dataset_stats,
     )
+    from src.data.split import make_patient_split, print_split_report
+    from src.data.load_split import load_patient_split
 """
 
 __all__ = [
@@ -23,4 +25,8 @@ __all__ = [
     "get_tta_transforms",
     "get_train_transforms",
     "get_val_transforms",
+    # split utilities (Experiment 1)
+    "make_patient_split",
+    "print_split_report",
+    "load_patient_split",
 ]

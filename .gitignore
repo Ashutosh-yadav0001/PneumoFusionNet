@@ -4,6 +4,7 @@ PneumoFusion-Net/
 # Dataset (too large for GitHub)
 Data/
 data/
+!src/data/
 dataset/
 datasets/
 
@@ -52,5 +53,3 @@ mimic/1000_dataset/outputs/**/*.pth
 mimic/1000_dataset/outputs/**/*.pt
 
 *.csv
-
-

@@ -1,0 +1,31 @@
+{
+  "experiment": "Experiment 1 \u2014 Shared Patient-Level Split",
+  "phase": "1 \u2014 Image Only",
+  "split": {
+    "n_train": 2635,
+    "n_val": 566,
+    "n_test": 562,
+    "train_patients": 2382,
+    "val_patients": 511,
+    "test_patients": 511
+  },
+  "hyperparams": {
+    "img_size": 224,
+    "batch_size": 8,
+    "num_epochs": 20,
+    "lr": 3e-05,
+    "tta_views": 10,
+    "seed": 42
+  },
+  "results": {
+    "test_auc": 0.8408,
+    "test_acc": 0.7046,
+    "test_f1": 0.7492,
+    "tta_auc": 0.8446,
+    "tta_acc": 0.6922,
+    "youden_threshold": 0.5347,
+    "tuned_acc": 0.7651,
+    "sensitivity": 0.7706,
+    "specificity": 0.7597
+  }
+}
