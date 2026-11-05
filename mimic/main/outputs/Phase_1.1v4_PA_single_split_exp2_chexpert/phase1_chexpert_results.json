@@ -1,0 +1,35 @@
+{
+  "experiment": "Experiment 2 \u2014 Resolve Image Checkpoint Overlap (Stanford CheXpert Pretraining)",
+  "phase": "Phase 1 \u2014 Image-Only Classifier",
+  "backbone_weights": "densenet121-res224-chex",
+  "pretraining_source": "Stanford CheXpert (224,316 radiographs, Stanford Hospital, CA)",
+  "pretraining_mimic_overlap": "0.0%",
+  "split": {
+    "n_train": 2635,
+    "n_val": 566,
+    "n_test": 562,
+    "train_patients": 2382,
+    "val_patients": 511,
+    "test_patients": 511
+  },
+  "results": {
+    "test_auc": 0.7773,
+    "tta_auc": 0.7831,
+    "youden_threshold": 0.5254,
+    "accuracy": 71.17,
+    "sensitivity": 64.87,
+    "specificity": 77.39,
+    "f1_score": 0.6908,
+    "false_negatives": 98,
+    "false_positives": 64,
+    "best_val_auc": 0.7581
+  },
+  "comparison_vs_legacy_all": {
+    "legacy_all_test_auc": 0.8408,
+    "legacy_all_tta_auc": 0.8446,
+    "chexpert_test_auc": 0.7773,
+    "chexpert_tta_auc": 0.7831,
+    "auc_delta": -0.0635,
+    "leak_free_guarantee": true
+  }
+}
