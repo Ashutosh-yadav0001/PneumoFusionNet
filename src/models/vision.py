@@ -4,17 +4,16 @@ src/models/vision.py
 Vision backbone module for PneumoFusionNet.
 
 Contains:
-    ChannelAttention   — CBAM channel attention branch
-    SpatialAttention   — CBAM spatial attention branch
-    CBAM               — Full Convolutional Block Attention Module
-    EnhancedPneumoNetV4 — Phase 1 standalone DenseNet-121 classifier
-    ImageEncoder        — Frozen feature extractor used in Phase 2 & 3
-    build_model         — Convenience factory for Phase 1 training
+    ChannelAttention    — CBAM channel attention branch
+    SpatialAttention    — CBAM spatial attention branch
+    CBAM                — Full Convolutional Block Attention Module
+    EnhancedPneumoNetV4 — Standalone DenseNet-121 classifier with configurable weights
+    ImageEncoder         — Frozen feature extractor used in Phase 2 & 3
+    build_model          — Convenience factory for Phase 1 training
 
-Source notebooks:
-    mimic/main/Phase-1/Phase-1.1v4-crossval_tta_PA.ipynb
-    mimic/main/Scaleup/Phase-2v2-multimodal_improved_PA_Upscaled.ipynb
-    mimic/main/Phase-3/Phase-3-triple_fusion_PA_Scaleup.ipynb
+Experiment 2 Support:
+    Allows resolving pretraining overlap by selecting weights that strictly
+    exclude MIMIC-CXR (e.g. 'densenet121-res224-nih' or 'imagenet').
 """
 
 import torch
@@ -109,29 +108,62 @@ class CBAM(nn.Module):
 class EnhancedPneumoNetV4(nn.Module):
     """Phase 1 DenseNet-121 pneumonia classifier with CBAM attention.
 
+    Supports configurable pretraining weights to address checkpoint overlap:
+        - "densenet121-res224-all" : TorchXRayVision all-CXR mixture (includes MIMIC-CXR)
+        - "densenet121-res224-nih" : Pretrained ONLY on NIH ChestX-ray14 (0% MIMIC overlap)
+        - "densenet121-res224-chex": Pretrained ONLY on Stanford CheXpert (0% MIMIC overlap)
+        - "imagenet" / "torchvision": Pretrained on ImageNet-1K (0% MIMIC overlap)
+        - None                     : Random Kaiming initialization from scratch
+
     Architecture:
-        - Backbone : TorchXRayVision DenseNet-121 (densenet121-res224-all)
-        - Frozen   : conv0 → transition2 (early layers)
+        - Backbone : DenseNet-121 feature extractor (1024 channels)
+        - Frozen   : conv0 -> transition2 (early layers)
         - Trainable: denseblock3, transition3, denseblock4 + CBAM + head
         - Attention: CBAM on 1024-channel feature map
-        - Head     : Dropout → Linear(1024→512) → BN → ReLU →
-                     Dropout → Linear(512→128) → BN → ReLU →
-                     Dropout → Linear(128→num_classes)
+        - Head     : Dropout -> Linear(1024->512) -> BN -> ReLU ->
+                     Dropout -> Linear(512->128) -> BN -> ReLU ->
+                     Dropout -> Linear(128->num_classes)
 
     Args:
         num_classes (int): Number of output classes. Default: 2.
-
-    Example::
-
-        model = EnhancedPneumoNetV4(num_classes=2)
-        logits = model(images)          # images: (B, 1, 224, 224)
-        features = model.get_features(images)  # (B, 1024)
+        weights (str, optional): Pretrained weights identifier. Default: "densenet121-res224-all".
     """
 
-    def __init__(self, num_classes: int = 2):
+    def __init__(self, num_classes: int = 2, weights: str = "densenet121-res224-all"):
         super().__init__()
-        xrv_model = xrv.models.DenseNet(weights="densenet121-res224-all")
-        self.features = xrv_model.features
+        self.weights = weights
+
+        if weights in ("imagenet", "torchvision"):
+            import torchvision.models as tv_models
+            tv_model = tv_models.densenet121(weights=tv_models.DenseNet121_Weights.DEFAULT)
+            old_conv = tv_model.features.conv0
+            new_conv = nn.Conv2d(
+                1, old_conv.out_channels,
+                kernel_size=old_conv.kernel_size,
+                stride=old_conv.stride,
+                padding=old_conv.padding,
+                bias=False
+            )
+            with torch.no_grad():
+                new_conv.weight.copy_(old_conv.weight.mean(dim=1, keepdim=True))
+            tv_model.features.conv0 = new_conv
+            self.features = tv_model.features
+        elif weights is None:
+            import torchvision.models as tv_models
+            tv_model = tv_models.densenet121(weights=None)
+            old_conv = tv_model.features.conv0
+            new_conv = nn.Conv2d(
+                1, old_conv.out_channels,
+                kernel_size=old_conv.kernel_size,
+                stride=old_conv.stride,
+                padding=old_conv.padding,
+                bias=False
+            )
+            tv_model.features.conv0 = new_conv
+            self.features = tv_model.features
+        else:
+            xrv_model = xrv.models.DenseNet(weights=weights)
+            self.features = xrv_model.features
 
         # Freeze early layers; fine-tune later blocks
         freeze_layers = {
@@ -186,11 +218,16 @@ class EnhancedPneumoNetV4(nn.Module):
         return self.pool(f).flatten(1)
 
 
-def build_model(num_classes: int = 2, device: torch.device = None) -> EnhancedPneumoNetV4:
+def build_model(
+    num_classes: int = 2,
+    weights: str = "densenet121-res224-all",
+    device: torch.device = None
+) -> EnhancedPneumoNetV4:
     """Factory function: instantiate and move EnhancedPneumoNetV4 to device.
 
     Args:
         num_classes (int): Output classes. Default: 2.
+        weights (str): Pretrained weights. Default: "densenet121-res224-all".
         device (torch.device): Target device. Defaults to CUDA if available.
 
     Returns:
@@ -198,11 +235,11 @@ def build_model(num_classes: int = 2, device: torch.device = None) -> EnhancedPn
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = EnhancedPneumoNetV4(num_classes=num_classes).to(device)
+    model = EnhancedPneumoNetV4(num_classes=num_classes, weights=weights).to(device)
     total = sum(p.numel() for p in model.parameters())
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(
-        f"[EnhancedPneumoNetV4] Params: {total:,} total, "
+        f"[EnhancedPneumoNetV4 | weights='{weights}'] Params: {total:,} total, "
         f"{trainable:,} trainable ({trainable / total * 100:.1f}%)"
     )
     return model
@@ -221,18 +258,36 @@ class ImageEncoder(nn.Module):
 
     Args:
         checkpoint_path (str): Path to Phase 1 ``.pth`` checkpoint file.
+        weights (str): Backbone weights architecture (matches Phase 1). Default: "densenet121-res224-all".
 
     Example::
 
-        encoder = ImageEncoder("mimic/main/outputs/.../best_model_fold5.pth")
+        encoder = ImageEncoder("path/to/phase1_best_model.pth")
         features = encoder(images)        # (B, 1024)
         maps = encoder.get_feature_maps(images)  # (B, 1024, H, W)
     """
 
-    def __init__(self, checkpoint_path: str):
+    def __init__(self, checkpoint_path: str, weights: str = "densenet121-res224-all"):
         super().__init__()
-        xrv_model = xrv.models.DenseNet(weights="densenet121-res224-all")
-        self.features = xrv_model.features
+        self.weights = weights
+
+        if weights in ("imagenet", "torchvision"):
+            import torchvision.models as tv_models
+            tv_model = tv_models.densenet121(weights=None)
+            old_conv = tv_model.features.conv0
+            new_conv = nn.Conv2d(
+                1, old_conv.out_channels,
+                kernel_size=old_conv.kernel_size,
+                stride=old_conv.stride,
+                padding=old_conv.padding,
+                bias=False
+            )
+            tv_model.features.conv0 = new_conv
+            self.features = tv_model.features
+        else:
+            xrv_model = xrv.models.DenseNet(weights=weights)
+            self.features = xrv_model.features
+
         self.cbam = CBAM(1024)
         self.pool = nn.AdaptiveAvgPool2d(1)
 
@@ -244,7 +299,7 @@ class ImageEncoder(nn.Module):
         }
         missing, unexpected = self.load_state_dict(compatible, strict=False)
         print(
-            f"[ImageEncoder] Loaded {len(compatible)} keys from checkpoint | "
+            f"[ImageEncoder | weights='{weights}'] Loaded {len(compatible)} keys from checkpoint | "
             f"missing={len(missing)} unexpected={len(unexpected)}"
         )
 

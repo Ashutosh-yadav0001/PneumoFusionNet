@@ -1,0 +1,67 @@
+{
+  "experiment": "Experiment 2 \u2014 Resolve Image Checkpoint Overlap",
+  "description": "Systematic audit and benchmark of alternative image backbones strictly excluding MIMIC-CXR",
+  "test_size": 562,
+  "results": [
+    {
+      "id": "all",
+      "name": "DenseNet-121 (All CXR Mixture)",
+      "training_data": "NIH, PadChest, CheXpert, MIMIC-CXR, OpenI, Google, RSNA",
+      "mimic_overlap": "YES (Trained on MIMIC-CXR CheXpert set)",
+      "zero_shot_auc": 0.7762959585597224,
+      "linear_probe_auc": 0.8182,
+      "youden_threshold": 0.5774,
+      "accuracy": 74.91,
+      "sensitivity": 68.82,
+      "specificity": 80.92,
+      "test_n": 562,
+      "delong_p_value_vs_all": 1.0,
+      "delong_significance": "Baseline"
+    },
+    {
+      "id": "nih",
+      "name": "DenseNet-121 (NIH ChestX-ray14 Only)",
+      "training_data": "NIH ChestX-ray14 only (112,120 frontal CXRs, 30,805 patients)",
+      "mimic_overlap": "NO (0.0% overlap; strictly Bethesda, MD cohort)",
+      "zero_shot_auc": 0.7055485897387186,
+      "linear_probe_auc": 0.7961,
+      "youden_threshold": 0.4738,
+      "accuracy": 73.31,
+      "sensitivity": 73.48,
+      "specificity": 73.14,
+      "test_n": 562,
+      "delong_p_value_vs_all": 0.0,
+      "delong_significance": "Statistically Significant (p < 0.05)"
+    },
+    {
+      "id": "chex",
+      "name": "DenseNet-121 (Stanford CheXpert Only)",
+      "training_data": "Stanford CheXpert only (224,316 radiographs, 65,240 patients)",
+      "mimic_overlap": "NO (0.0% overlap; strictly Stanford Hospital cohort)",
+      "zero_shot_auc": 0.772813050141216,
+      "linear_probe_auc": 0.8027,
+      "youden_threshold": 0.57,
+      "accuracy": 71.71,
+      "sensitivity": 63.44,
+      "specificity": 79.86,
+      "test_n": 562,
+      "delong_p_value_vs_all": 0.0,
+      "delong_significance": "Statistically Significant (p < 0.05)"
+    },
+    {
+      "id": "imagenet",
+      "name": "DenseNet-121 (TorchVision ImageNet-1K)",
+      "training_data": "ImageNet-1K (1.28 million natural photographic RGB images)",
+      "mimic_overlap": "NO (0.0% overlap; natural consumer images)",
+      "zero_shot_auc": null,
+      "linear_probe_auc": 0.6905,
+      "youden_threshold": 0.6962,
+      "accuracy": 61.57,
+      "sensitivity": 46.24,
+      "specificity": 76.68,
+      "test_n": 562,
+      "delong_p_value_vs_all": 0.0,
+      "delong_significance": "Statistically Significant (p < 0.05)"
+    }
+  ]
+}
