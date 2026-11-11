@@ -1,0 +1,86 @@
+{
+  "phase": 3,
+  "description": "Triple Fusion: Image + Text + Clinical Metadata (Exp 5 & 6)",
+  "architecture": {
+    "image_encoder": "DenseNet121+CBAM (frozen, NIH pretrained \u2014 zero MIMIC overlap)",
+    "text_encoder": "Bio_ClinicalBERT (last 2 layers unfrozen)",
+    "meta_encoder": "MLP(16->128->128->64)",
+    "fusion": "CrossAttention(img queries text, key_padding_mask) + concat meta + MLP classifier",
+    "fused_dim": 1600,
+    "clinical_feats": [
+      "age",
+      "gender_M",
+      "heart_rate",
+      "respiratory_rate",
+      "spo2",
+      "systolic_bp",
+      "diastolic_bp",
+      "temperature_f",
+      "wbc",
+      "hemoglobin",
+      "hematocrit",
+      "creatinine",
+      "crp",
+      "alk_phos",
+      "albumin",
+      "has_vitals"
+    ],
+    "is_deceased_removed": true,
+    "text_fallback_removed": true,
+    "key_padding_mask_used": true,
+    "p2v2_weights_loaded": true
+  },
+  "training": {
+    "n_train": 2635,
+    "n_val": 566,
+    "n_test": 562,
+    "batch_size": 16,
+    "epochs_run": 9,
+    "lr_fusion": 0.0002,
+    "lr_bert": 1e-05,
+    "lr_meta": 0.001,
+    "focal_gamma": 2.0,
+    "mixup_alpha": 0.2
+  },
+  "results": {
+    "val_threshold": 0.4918,
+    "test_roc_auc": 0.9478,
+    "test_pr_auc": 0.9469,
+    "test_accuracy": 0.8737,
+    "test_sensitivity": 0.8817,
+    "test_specificity": 0.8657,
+    "test_f1": 0.8739,
+    "confusion_matrix": {
+      "tn": 245,
+      "fp": 38,
+      "fn": 33,
+      "tp": 246
+    },
+    "n_test": 562
+  },
+  "feature_importances": {
+    "age": -0.0001,
+    "gender_M": -0.0,
+    "heart_rate": 0.0,
+    "respiratory_rate": 0.0001,
+    "spo2": -0.0,
+    "systolic_bp": 0.0002,
+    "diastolic_bp": -0.0001,
+    "temperature_f": -0.0,
+    "wbc": 0.0003,
+    "hemoglobin": 0.0002,
+    "hematocrit": 0.0001,
+    "creatinine": 0.0005,
+    "crp": 0.0003,
+    "alk_phos": -0.0001,
+    "albumin": 0.0001,
+    "has_vitals": 0.0
+  },
+  "comparison": {
+    "phase1_roc_auc": 0.808,
+    "phase2_roc_auc": 0.9476,
+    "phase3_roc_auc": 0.9478,
+    "gain_over_p1": 0.1398,
+    "gain_over_p2": 0.0002
+  }
+}
