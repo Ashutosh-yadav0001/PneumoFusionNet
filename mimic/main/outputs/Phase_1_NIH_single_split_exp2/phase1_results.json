@@ -42,8 +42,8 @@
       "f1": 0.7214
     },
     "tta_results": {
-      "tta_roc_auc": 0.8116,
-      "tta_pr_auc": 0.8232,
+      "tta_roc_auc": 0.8122,
+      "tta_pr_auc": 0.8244,
       "tta_accuracy": 0.7206,
       "tta_sensitivity": 0.6344,
       "tta_specificity": 0.8057,
