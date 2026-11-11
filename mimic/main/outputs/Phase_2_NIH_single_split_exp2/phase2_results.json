@@ -1,0 +1,46 @@
+{
+  "experiment": "Experiment 4 \u2014 Image + Text Cross-Attention Multimodal Fusion",
+  "image_backbone": "Phase 1 NIH DenseNet-121 (zero MIMIC pretraining overlap)",
+  "text_backbone": "ClinicalBERT (last 2 layers unfrozen)",
+  "section_extraction": {
+    "sections_used": [
+      "INDICATION",
+      "FINDINGS"
+    ],
+    "raw_report_fallback": false,
+    "empty_reports_count": 218,
+    "empty_reports_pct": 5.79
+  },
+  "cross_attention_padding_mask": true,
+  "multimodal_results": {
+    "val_auc": 0.9376,
+    "val_threshold": 0.5774,
+    "test_roc_auc": 0.9476,
+    "test_pr_auc": 0.9471,
+    "test_accuracy": 0.879,
+    "test_sensitivity": 0.871,
+    "test_specificity": 0.8869,
+    "test_f1": 0.8773,
+    "confusion_matrix": {
+      "tn": 251,
+      "fp": 32,
+      "fn": 36,
+      "tp": 243
+    }
+  },
+  "text_only_baseline": {
+    "val_threshold": 0.5124,
+    "test_roc_auc": 0.9399,
+    "test_pr_auc": 0.9324,
+    "test_accuracy": 0.8737,
+    "test_sensitivity": 0.9391,
+    "test_specificity": 0.8092,
+    "test_f1": 0.8807,
+    "confusion_matrix": {
+      "tn": 229,
+      "fp": 54,
+      "fn": 17,
+      "tp": 262
+    }
+  }
+}

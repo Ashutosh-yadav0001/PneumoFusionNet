@@ -1,0 +1,59 @@
+{
+  "experiment": "Experiment 2 & 3 \u2014 NIH DenseNet-121 Image-Only Baseline",
+  "phase": "1 \u2014 Image Only",
+  "checkpoint_backbone": "densenet121-res224-nih (TorchXRayVision, NIH ChestX-ray14 pretraining, 0 MIMIC overlap)",
+  "threshold_selection": "Validation-derived Youden-J threshold, applied frozen to test",
+  "split": {
+    "n_train": 2635,
+    "n_val": 566,
+    "n_test": 562,
+    "train_patients": 2382,
+    "val_patients": 511,
+    "test_patients": 511
+  },
+  "hyperparams": {
+    "img_size": 224,
+    "batch_size": 8,
+    "num_epochs": 20,
+    "lr": 3e-05,
+    "tta_views": 10,
+    "seed": 42
+  },
+  "results": {
+    "val_auc": 0.773,
+    "val_threshold": 0.5708,
+    "test_roc_auc": 0.808,
+    "test_pr_auc": 0.8198,
+    "test_accuracy": 0.7242,
+    "test_sensitivity": 0.6165,
+    "test_specificity": 0.8304,
+    "test_f1": 0.6894,
+    "confusion_matrix": {
+      "tn": 235,
+      "fp": 48,
+      "fn": 107,
+      "tp": 172
+    },
+    "default_threshold_results": {
+      "threshold": 0.5,
+      "accuracy": 0.6619,
+      "sensitivity": 0.8817,
+      "specificity": 0.4452,
+      "f1": 0.7214
+    },
+    "tta_results": {
+      "tta_roc_auc": 0.8116,
+      "tta_pr_auc": 0.8232,
+      "tta_accuracy": 0.7206,
+      "tta_sensitivity": 0.6344,
+      "tta_specificity": 0.8057,
+      "tta_f1": 0.6928,
+      "confusion_matrix": {
+        "tn": 228,
+        "fp": 55,
+        "fn": 102,
+        "tp": 177
+      }
+    }
+  }
+}
