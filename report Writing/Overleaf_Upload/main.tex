@@ -274,24 +274,25 @@ All metrics are reported on the held-out test set ($N_{\text{test}}\!=\!562$ rad
 % ── Table I: 4-Way Ablation ───────────────────────────────
 \begin{table}[t]
 \centering
-\caption{\textcolor{aideep}{Four-Way Ablation — All Models on Identical 562-Image Test Set. Thresholds $\tau$ selected on validation set (Youden's~J) and frozen.}}
+\caption{\textcolor{aideep}{Four-Way Ablation — All Models on Identical 562-Image Test Set. Thresholds $\tau_{\mathrm{val}}$ (Youden's~J on val set, frozen before test). PR-AUC also reported.}}
 \label{tab:results}
 \setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{@{}llccccc@{}}
+\begin{tabular}{@{}llcccccc@{}}
 \toprule
-\textbf{Model} & \textbf{Modality} & \textbf{AUC} & \textbf{Acc.} & \textbf{Sens.} & \textbf{Spec.} & \textbf{F1} \\
+\textbf{Model} & \textbf{Modality} & \textbf{AUC} & \textbf{PR-AUC} & \textbf{Acc.} & \textbf{Sens.} & \textbf{Spec.} & \textbf{F1} \\
 \midrule
-A & CXR only        & 0.807 & 73.5\% & 77.4\% & 69.6\% & 0.744 \\
-B & CXR + Text      & 0.948 & 88.1\% & 87.1\% & 89.1\% & 0.879 \\
-C & CXR + WBC       & 0.814 & 72.2\% & 56.3\% & 88.0\% & 0.668 \\
-\textbf{D} & \textbf{CXR+Text+WBC} & \textbf{0.948} & \textbf{89.0\%} & 87.8\% & \textbf{90.1\%} & \textbf{0.888} \\
+A$^\star$ & CXR only & 0.807 & 0.818 & 73.5\% & 77.4\% & 69.6\% & 0.744 \\
+B & CXR + Text      & 0.9475 & 0.945 & 88.1\% & 87.1\% & 88.7\% & 0.877 \\
+C & CXR + WBC       & 0.814 & 0.836 & 72.2\% & 56.3\% & 88.0\% & 0.668 \\
+\textbf{D} & \textbf{CXR+Text+WBC} & \textbf{0.9482} & \textbf{0.947} & \textbf{89.0\%} & 87.8\% & \textbf{90.1\%} & \textbf{0.888} \\
 \midrule
-Phase~3$^\dagger$ & CXR+Text+16 EHR & 0.948 & 87.4\% & \textbf{88.2\%} & 86.6\% & 0.874 \\
+Phase~3$^\dagger$ & CXR+Text+16 EHR & 0.9478 & 0.947 & 87.4\% & \textbf{88.2\%} & 86.6\% & 0.874 \\
 \midrule
-Text Only$^\ddagger$ & ClinicalBERT & 0.940 & -- & -- & -- & -- \\
+Text Only$^\ddagger$ & ClinicalBERT & 0.940 & 0.932 & 87.4\% & 93.9\% & 80.9\% & 0.881 \\
 \bottomrule
-\multicolumn{7}{@{}l}{\footnotesize $^\dagger$16 structured clinical features; \texttt{is\_deceased} excluded.}\\
-\multicolumn{7}{@{}l}{\footnotesize $^\ddagger$Image-free baseline confirming report as dominant modality.}\\
+\multicolumn{8}{@{}l}{\footnotesize $^\dagger$16 structured clinical features; \texttt{is\_deceased} excluded.}\\
+\multicolumn{8}{@{}l}{\footnotesize $^\ddagger$Image-free baseline confirming report as dominant modality; full metrics shown.}\\
+\multicolumn{8}{@{}l}{\footnotesize $^\star$Exp.~5 re-train; $\tau_{\mathrm{val}}\!=\!0.539$. Phase~1 primary (Exp.~3) uses $\tau_{\mathrm{val}}\!=\!0.571$: Sens.=61.7\%, Spec.=83.0\%.}\\
 \end{tabular}
 \end{table}
 
@@ -308,7 +309,7 @@ Table~\ref{tab:results} reveals a clear ablation pattern. The image-only baselin
 \textbf{Model} & \textbf{TN} & \textbf{FP} & \textbf{FN} & \textbf{TP} \\
 \midrule
 A: CXR only      & 197 &  86 &  63 & 216 \\
-B: CXR + Text    & 252 &  31 &  36 & 243 \\
+B: CXR + Text    & 251 &  32 &  36 & 243 \\
 C: CXR + WBC     & 249 &  34 & 122 & 157 \\
 D: CXR+Text+WBC  & 255 &  28 &  34 & 245 \\
 Phase~3 (full)   & 245 &  38 &  33 & 246 \\
@@ -344,7 +345,7 @@ Yu~et~al.~\cite{frontiers2025pneumofusion}$^\ddagger$ & Private (CT) & -- & 98.9
 % ==========================================================
 \section{\textcolor{aideep}{Discussion}}
 
-\textbf{Image-only models plateau at AUC\,$\approx$\,0.81.} Despite CBAM attention and a clean NIH-pretrained backbone, the vision model saturates at AUC\,=\,0.808 with Sensitivity of only 61.7\%, missing more than a third of pneumonia cases. This confirms that visual morphology alone is insufficient.
+\textbf{Image-only models plateau at AUC\,$\approx$\,0.81.} Despite CBAM attention and a clean NIH-pretrained backbone, the vision model saturates at AUC\,=\,0.808. At the Youden-J validation threshold ($\tau\!=\!0.571$, Experiment~3), Sensitivity\,=\,61.7\% and Specificity\,=\,83.0\%. The ablation table (Experiment~5, $\tau\!=\!0.539$) shows a different operating point: Sensitivity\,=\,77.4\%, Specificity\,=\,69.6\% — both reflect the same model evaluated at two different thresholds. In either case, more than 12\% of pneumonia cases are missed, confirming that visual morphology alone is insufficient. This confirms that visual morphology alone is insufficient.
 
 \textbf{Radiology text is the dominant modality.} The text-only ClinicalBERT baseline reaches AUC\,=\,0.940, only 0.8~pp below the full CXR+Text model. This high correlation between report text and diagnosis labels in MIMIC-CXR is expected (the same radiologist writes both), and underscores the importance of the leakage-controlled preprocessing: performance reflects genuine text features (symptom history, clinical observations), not memorised diagnosis strings.
 
@@ -362,7 +363,7 @@ Yu~et~al.~\cite{frontiers2025pneumofusion}$^\ddagger$ & Private (CT) & -- & 98.9
 We presented PneumoFusionNet, a leakage-controlled progressive multimodal framework for pneumonia detection on 3{,}763 MIMIC-CXR studies. Using a single stratified patient-level split (70/15/15 by \texttt{subject\_id}) and evaluating all models on an identical 562-image test set with validation-derived thresholds, we quantified the contribution of each modality. The image-only baseline (AUC\,=\,0.808) is substantially improved by leakage-free radiology text fusion (AUC\,=\,0.948, +14.0~pp), while WBC addition provides a small marginal gain. The text-only baseline (AUC\,=\,0.940) confirms that the report is the dominant modality. Future work will investigate prospective pre-index WBC matching, external validation on geographically diverse datasets, and multi-label pathology classification.
 
 \vspace{4pt}
-\noindent\textbf{Code and Data:} \url{https://github.com/Ashutosh-yadav0001/PneumoFusionNet} (branch \texttt{main}, commit \texttt{8cdf011}). Notebooks: \texttt{mimic/main/Experiment\_1\_Notebooks/}. MIMIC-CXR and MIMIC-IV data require PhysioNet credentialled access (CITI training + DUA).
+\noindent\textbf{Code and Data:} \url{https://github.com/Ashutosh-yadav0001/PneumoFusionNet} (branch \texttt{main}, commit \texttt{7d2b7e3}). Notebooks: \texttt{mimic/main/Experiment\_1\_Notebooks/}. MIMIC-CXR and MIMIC-IV data require PhysioNet credentialled access (CITI training + DUA).
 
 % ==========================================================
 %  REFERENCES
